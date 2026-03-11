@@ -61,6 +61,7 @@ export interface WorkspaceSummary {
     address: string | null;
     inboxCount: number | null;
     unreadCount: number | null;
+    summary: string | null;
     messages: WorkspaceSummaryMessage[];
     error: string | null;
   };
@@ -68,6 +69,7 @@ export interface WorkspaceSummary {
     connected: boolean;
     primaryCalendar: string | null;
     upcomingCount: number | null;
+    summary: string | null;
     events: WorkspaceSummaryEvent[];
     error: string | null;
   };
@@ -134,6 +136,7 @@ function buildEmptyWorkspaceSummary(token?: GoogleAuthToken): WorkspaceSummary {
       address: null,
       inboxCount: null,
       unreadCount: null,
+      summary: null,
       messages: [],
       error: null,
     },
@@ -141,6 +144,7 @@ function buildEmptyWorkspaceSummary(token?: GoogleAuthToken): WorkspaceSummary {
       connected: false,
       primaryCalendar: null,
       upcomingCount: null,
+      summary: null,
       events: [],
       error: null,
     },
@@ -290,6 +294,7 @@ async function getGmailSummary(accessToken: string) {
       typeof inbox.messagesTotal === "number" ? inbox.messagesTotal : null,
     unreadCount:
       typeof unread.messagesUnread === "number" ? unread.messagesUnread : null,
+    summary: null,
     messages,
     error: null,
   };
@@ -315,6 +320,7 @@ async function getCalendarSummary(accessToken: string) {
     connected: true,
     primaryCalendar: calendar.summary || null,
     upcomingCount: events.items?.length || 0,
+    summary: null,
     events: (events.items || []).map((event) => ({
       id: event.id,
       title: sanitizeText(event.summary) || "Untitled event",
@@ -325,6 +331,118 @@ async function getCalendarSummary(accessToken: string) {
     })),
     error: null,
   };
+}
+
+function formatEventMoment(value: string | null): string {
+  if (!value) return "unscheduled";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "upcoming";
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function buildGmailFallbackSummary(
+  gmail: WorkspaceSummary["gmail"]
+): string {
+  if (!gmail.connected) {
+    return "Connect your inbox to see a concise email brief here.";
+  }
+
+  if (!gmail.messages.length) {
+    return "Your recent inbox is quiet. No notable messages were pulled into this view.";
+  }
+
+  const senders = Array.from(
+    new Set(
+      gmail.messages
+        .map((message) => message.from.split("<")[0]?.replace(/"/g, "").trim())
+        .filter(Boolean)
+    )
+  ).slice(0, 3);
+
+  const senderCopy = senders.length
+    ? `Recent messages are coming from ${senders.join(", ")}.`
+    : "Recent messages are spread across a few senders.";
+
+  const unreadCopy =
+    typeof gmail.unreadCount === "number"
+      ? `You have ${gmail.unreadCount.toLocaleString()} unread messages.`
+      : "Unread count is not available right now.";
+
+  return `${unreadCopy} ${senderCopy}`.trim();
+}
+
+function buildCalendarFallbackSummary(
+  calendar: WorkspaceSummary["calendar"]
+): string {
+  if (!calendar.connected) {
+    return "Connect your calendar to see your upcoming schedule here.";
+  }
+
+  if (!calendar.events.length) {
+    return "Your calendar is clear for now with no upcoming events in this view.";
+  }
+
+  const nextEvent = calendar.events[0];
+  const nextEventCopy = `Next up is ${nextEvent.title} ${formatEventMoment(nextEvent.start)}.`;
+  const totalCopy =
+    typeof calendar.upcomingCount === "number"
+      ? `${calendar.upcomingCount} upcoming events are on deck.`
+      : "Your next few events are loaded.";
+
+  return `${totalCopy} ${nextEventCopy}`.trim();
+}
+
+async function generateAiBrief(
+  label: "inbox" | "calendar",
+  payload: Record<string, unknown>,
+  fallback: string
+): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    return fallback;
+  }
+
+  try {
+    const systemPrompt =
+      label === "inbox"
+        ? "You write crisp executive inbox briefs. Summarize only the most important email themes in one or two sentences. Be natural, not technical."
+        : "You write crisp executive calendar briefs. Summarize the schedule in one or two sentences. Focus on what matters next and overall cadence. Be natural, not technical.";
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.4,
+        max_tokens: 90,
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: `Write a polished briefing summary from this JSON:\n${JSON.stringify(
+              payload
+            )}`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      return fallback;
+    }
+
+    const data = await response.json();
+    const content = sanitizeText(data.choices?.[0]?.message?.content);
+    return content || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export async function getWorkspaceSummary(
@@ -347,6 +465,20 @@ export async function getWorkspaceSummary(
   if (scopeSet.has(GOOGLE_GMAIL_SCOPE)) {
     try {
       summary.gmail = await getGmailSummary(refreshedToken.googleAccessToken);
+      summary.gmail.summary = await generateAiBrief(
+        "inbox",
+        {
+          unreadCount: summary.gmail.unreadCount,
+          inboxCount: summary.gmail.inboxCount,
+          messages: summary.gmail.messages.map((message) => ({
+            from: message.from,
+            subject: message.subject,
+            snippet: message.snippet,
+            receivedAt: message.receivedAt,
+          })),
+        },
+        buildGmailFallbackSummary(summary.gmail)
+      );
     } catch (error) {
       summary.gmail.error =
         error instanceof Error ? error.message : "Failed to load Gmail summary";
@@ -358,6 +490,20 @@ export async function getWorkspaceSummary(
   if (scopeSet.has(GOOGLE_CALENDAR_SCOPE)) {
     try {
       summary.calendar = await getCalendarSummary(refreshedToken.googleAccessToken);
+      summary.calendar.summary = await generateAiBrief(
+        "calendar",
+        {
+          primaryCalendar: summary.calendar.primaryCalendar,
+          upcomingCount: summary.calendar.upcomingCount,
+          events: summary.calendar.events.map((event) => ({
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            location: event.location,
+          })),
+        },
+        buildCalendarFallbackSummary(summary.calendar)
+      );
     } catch (error) {
       summary.calendar.error =
         error instanceof Error

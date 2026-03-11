@@ -92,6 +92,7 @@ export interface WorkspaceSummary {
     address: string | null;
     inboxCount: number | null;
     unreadCount: number | null;
+    summary: string | null;
     messages: WorkspaceSummaryMessage[];
     error: string | null;
   };
@@ -99,6 +100,7 @@ export interface WorkspaceSummary {
     connected: boolean;
     primaryCalendar: string | null;
     upcomingCount: number | null;
+    summary: string | null;
     events: WorkspaceSummaryEvent[];
     error: string | null;
   };
