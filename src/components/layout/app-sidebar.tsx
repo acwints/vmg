@@ -1,7 +1,9 @@
 "use client";
 
+import type { ElementType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useFundOverview } from "@/hooks/use-api";
 import { useSidebar } from "@/context/sidebar-context";
 import { cn } from "@/lib/utils";
 import {
@@ -13,61 +15,181 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
+  Building2,
+  Compass,
+  Kanban,
+  Landmark,
   LayoutDashboard,
-  Cpu,
-  ShoppingBag,
-  Settings,
   PanelLeftClose,
   PanelLeftOpen,
-  FileText,
-  TrendingUp,
-  Globe,
-  Kanban,
+  Settings,
 } from "lucide-react";
 
-interface SidebarSection {
-  id: string;
+type Icon = ElementType;
+
+interface NavChild {
   label: string;
-  icon: React.ElementType;
-  basePath: string;
+  href: string;
 }
 
-const sections: SidebarSection[] = [
-  {
-    id: "technology",
-    label: "Technology",
-    icon: Cpu,
-    basePath: "/dashboard/technology",
-  },
-  {
-    id: "consumer",
-    label: "Consumer",
-    icon: ShoppingBag,
-    basePath: "/dashboard/consumer",
-  },
-];
+interface NavGroup {
+  label: string;
+  href: string;
+  icon: Icon;
+  children?: NavChild[];
+}
+
+function isPathActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function SidebarIconLink({
+  href,
+  icon: IconComponent,
+  label,
+  active,
+}: {
+  href: string;
+  icon: Icon;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          href={href}
+          className={cn(
+            "flex items-center justify-center rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
+            active
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground"
+          )}
+        >
+          <IconComponent className="h-4 w-4 shrink-0" />
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function SidebarSection({
+  pathname,
+  group,
+}: {
+  pathname: string;
+  group: NavGroup;
+}) {
+  const active = isPathActive(pathname, group.href);
+  const IconComponent = group.icon;
+
+  return (
+    <div className="space-y-1.5">
+      <Link
+        href={group.href}
+        className={cn(
+          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+          active
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+        )}
+      >
+        <IconComponent className="h-4 w-4 shrink-0" />
+        <span className="flex-1">{group.label}</span>
+      </Link>
+
+      {group.children?.length ? (
+        <div className="ml-5 space-y-1 border-l border-border/70 pl-3">
+          {group.children.map((child) => {
+            const childActive = isPathActive(pathname, child.href);
+
+            return (
+              <Link
+                key={child.href}
+                href={child.href}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                  childActive
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    childActive ? "bg-foreground" : "bg-muted-foreground/50"
+                  )}
+                />
+                <span className="truncate">{child.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
+  const { overview } = useFundOverview();
 
-  const isSectionActive = (section: SidebarSection) => {
-    return pathname.startsWith(section.basePath);
-  };
+  const fundChildren =
+    overview?.funds.map((fund) => ({
+      label: fund.name,
+      href: `/dashboard/fund/${fund.slug}`,
+    })) ?? [];
+
+  const navGroups: NavGroup[] = [
+    {
+      label: "Portfolio",
+      href: "/dashboard/portfolio",
+      icon: Building2,
+      children: [
+        { label: "Consumer", href: "/dashboard/portfolio/consumer" },
+        { label: "Technology", href: "/dashboard/portfolio/technology" },
+      ],
+    },
+    {
+      label: "Pipeline",
+      href: "/dashboard/pipeline",
+      icon: Kanban,
+      children: [
+        { label: "Consumer", href: "/dashboard/pipeline/consumer" },
+        { label: "Technology", href: "/dashboard/pipeline/technology" },
+      ],
+    },
+    {
+      label: "Fund",
+      href: "/dashboard/fund",
+      icon: Landmark,
+      children: fundChildren,
+    },
+    {
+      label: "Industry",
+      href: "/dashboard/industry",
+      icon: Compass,
+      children: [
+        { label: "Consumer", href: "/dashboard/industry/consumer" },
+        { label: "Technology", href: "/dashboard/industry/technology" },
+      ],
+    },
+  ];
 
   return (
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
           "flex h-full flex-col border-r border-border bg-card transition-all duration-300",
-          collapsed ? "w-[60px]" : "w-[220px]"
+          collapsed ? "w-[60px]" : "w-[260px]"
         )}
       >
-        {/* Collapse toggle */}
         <div className={cn("px-3 py-3", collapsed && "flex justify-center")}>
           <button
             onClick={toggle}
-            className="flex items-center justify-center p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -80,243 +202,77 @@ export function AppSidebar() {
 
         <Separator />
 
-        {/* Navigation */}
         <ScrollArea className="flex-1 py-3">
-          <div className="space-y-1 px-2">
-            {/* Dashboard Home */}
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/dashboard"
-                    className={cn(
-                      "flex items-center justify-center rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
-                      pathname === "/dashboard"
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    )}
-                  >
-                    <LayoutDashboard className="h-4 w-4 shrink-0" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Dashboard</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
+          {collapsed ? (
+            <div className="space-y-2 px-2">
+              <SidebarIconLink
                 href="/dashboard"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  pathname === "/dashboard"
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <LayoutDashboard className="h-4 w-4 shrink-0" />
-                <span>Dashboard</span>
-              </Link>
-            )}
+                icon={LayoutDashboard}
+                label="Dashboard"
+                active={pathname === "/dashboard"}
+              />
 
-            <div className="pt-2" />
+              <div className="px-1 py-1">
+                <Separator />
+              </div>
 
-            {/* Portfolio Sections */}
-            {sections.map((section) => {
-              const SectionIcon = section.icon;
-              const active = isSectionActive(section);
-
-              return (
-                <div key={section.id} className="mb-1">
-                  {collapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          href={section.basePath}
-                          className={cn(
-                            "flex items-center justify-center rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
-                            active
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                          )}
-                        >
-                          <SectionIcon className="h-4 w-4 shrink-0" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        {section.label}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <Link
-                      href={section.basePath}
-                      className={cn(
-                        "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                        active
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                      )}
-                    >
-                      <SectionIcon className="h-4 w-4 shrink-0" />
-                      <span className="flex-1">{section.label}</span>
-                    </Link>
+              {navGroups.map((group) => (
+                <SidebarIconLink
+                  key={group.href}
+                  href={group.href}
+                  icon={group.icon}
+                  label={group.label}
+                  active={isPathActive(pathname, group.href)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4 px-3">
+              <div className="space-y-2">
+                <Link
+                  href="/dashboard"
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                    pathname === "/dashboard"
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}
-                </div>
-              );
-            })}
+                >
+                  <LayoutDashboard className="h-4 w-4 shrink-0" />
+                  <span>Dashboard</span>
+                </Link>
 
-            <div className="pt-2" />
+                <Separator className="my-2" />
+              </div>
 
-            {/* IC Memos */}
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/dashboard/memos"
-                    className={cn(
-                      "flex items-center justify-center rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
-                      pathname === "/dashboard/memos"
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    )}
-                  >
-                    <FileText className="h-4 w-4 shrink-0" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">IC Memos</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                href="/dashboard/memos"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  pathname === "/dashboard/memos"
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <FileText className="h-4 w-4 shrink-0" />
-                <span>IC Memos</span>
-              </Link>
-            )}
-
-            {/* Fund Model */}
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/dashboard/fund-model"
-                    className={cn(
-                      "flex items-center justify-center rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
-                      pathname === "/dashboard/fund-model"
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    )}
-                  >
-                    <TrendingUp className="h-4 w-4 shrink-0" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Fund Model</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                href="/dashboard/fund-model"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  pathname === "/dashboard/fund-model"
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <TrendingUp className="h-4 w-4 shrink-0" />
-                <span>Fund Model</span>
-              </Link>
-            )}
-
-            {/* Macro */}
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/dashboard/macro"
-                    className={cn(
-                      "flex items-center justify-center rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
-                      pathname === "/dashboard/macro"
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    )}
-                  >
-                    <Globe className="h-4 w-4 shrink-0" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Macro</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                href="/dashboard/macro"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  pathname === "/dashboard/macro"
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <Globe className="h-4 w-4 shrink-0" />
-                <span>Macro</span>
-              </Link>
-            )}
-
-            {/* Pipeline */}
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/dashboard/pipeline"
-                    className={cn(
-                      "flex items-center justify-center rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
-                      pathname === "/dashboard/pipeline"
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    )}
-                  >
-                    <Kanban className="h-4 w-4 shrink-0" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Pipeline</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                href="/dashboard/pipeline"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  pathname === "/dashboard/pipeline"
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <Kanban className="h-4 w-4 shrink-0" />
-                <span>Pipeline</span>
-              </Link>
-            )}
-          </div>
+              <div className="space-y-4">
+                {navGroups.map((group) => (
+                  <SidebarSection key={group.href} pathname={pathname} group={group} />
+                ))}
+              </div>
+            </div>
+          )}
         </ScrollArea>
 
-        {/* Footer — Settings only */}
         <Separator />
+
         <div className="p-3">
           {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/dashboard/settings"
-                  className="flex items-center justify-center rounded-lg px-2.5 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                >
-                  <Settings className="h-4 w-4" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Settings</TooltipContent>
-            </Tooltip>
+            <SidebarIconLink
+              href="/dashboard/settings"
+              icon={Settings}
+              label="Settings"
+              active={pathname === "/dashboard/settings"}
+            />
           ) : (
             <Link
               href="/dashboard/settings"
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+                pathname === "/dashboard/settings"
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              )}
             >
               <Settings className="h-4 w-4 shrink-0" />
               <span>Settings</span>

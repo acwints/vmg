@@ -1,24 +1,11 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { StatsCard } from "@/components/shared/stats-card";
 import { SectionHeader } from "@/components/shared/section-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useStats, useWorkspaceSummary } from "@/hooks/use-api";
-import {
-  CalendarDays,
-  Building2,
-  Award,
-  Cpu,
-  ShoppingBag,
-  ArrowRight,
-  Target,
-  Loader2,
-  Mail,
-  ExternalLink,
-} from "lucide-react";
+import { useWorkspaceSummary } from "@/hooks/use-api";
+import { CalendarDays, Loader2, Mail, ShieldCheck } from "lucide-react";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -67,161 +54,76 @@ function formatEventRange(start: string | null, end: string | null) {
   return `${dateTimeFormatter.format(startDate)} - ${dateTimeFormatter.format(endDate)}`;
 }
 
+function shortenScope(scope: string) {
+  if (scope.includes("gmail")) return "Gmail";
+  if (scope.includes("calendar")) return "Calendar";
+  if (scope.endsWith("/email")) return "Email";
+  if (scope.endsWith("/profile")) return "Profile";
+  if (scope.endsWith("/openid")) return "OpenID";
+  return scope;
+}
+
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const firstName = session?.user?.name?.split(" ")[0] || "there";
-  const { overall, technology, consumer, loading, error } = useStats();
-  const {
-    summary: workspaceSummary,
-    loading: workspaceLoading,
-    error: workspaceError,
-  } = useWorkspaceSummary(Boolean(session?.user));
-  const unreadCount = workspaceSummary?.gmail.unreadCount;
-  const upcomingCount = workspaceSummary?.calendar.upcomingCount;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <p className="text-sm text-destructive">Failed to load stats: {error}</p>
-      </div>
-    );
-  }
+  const { summary, loading, error } = useWorkspaceSummary(Boolean(session?.user));
+  const firstName = session?.user?.name?.split(" ")[0] || "Andrew";
 
   return (
-    <div className="max-w-7xl mx-auto w-full space-y-8 animate-fade-in">
-      {/* Welcome Header */}
-      <div className="space-y-1">
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-          Welcome back, {firstName}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          VMG Partners portfolio overview and intelligence
-        </p>
-      </div>
-
-      {/* Top-line stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
-        <StatsCard
-          title="Total Portfolio"
-          value={overall?.totalCompanies ?? 0}
-          description="companies across both portfolios"
-          icon={Building2}
-        />
-        <StatsCard
-          title="Active"
-          value={overall?.activeCompanies ?? 0}
-          icon={Target}
-        />
-        <StatsCard
-          title="Realized"
-          value={overall?.realizedCompanies ?? 0}
-          icon={Award}
-        />
-        <StatsCard
-          title="Sectors"
-          value={overall?.sectors ?? 0}
-          description="across Technology & Consumer"
-          icon={Award}
-        />
-      </div>
-
-      {/* Portfolio Cards */}
+    <div className="mx-auto w-full max-w-6xl space-y-8 animate-fade-in">
       <SectionHeader
-        title="Portfolios"
-        description="Navigate to each portfolio for detailed company metrics"
+        title={`Workspace for ${firstName}`}
+        description="This dashboard is reserved for Google Workspace context: inbox activity, calendar visibility, and active auth scopes."
       />
 
-      <div className="grid md:grid-cols-2 gap-5 stagger-fade-in">
-        {/* Technology Portfolio */}
-        <Link href="/dashboard/technology">
-          <Card className="glass-card glass-card-hover group cursor-pointer transition-all duration-300 hover:translate-y-[-2px]">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="rounded-xl bg-secondary p-3">
-                  <Cpu className="h-6 w-6 text-foreground" />
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-              </div>
+      <Card className="glass-card">
+        <CardContent className="flex flex-wrap items-center gap-3 p-6">
+          <Badge variant="outline">{session?.user?.email ?? "No active user"}</Badge>
+          {summary?.hostedDomain ? <Badge variant="secondary">{summary.hostedDomain}</Badge> : null}
+          {summary?.connected ? (
+            <Badge variant="active">Google connected</Badge>
+          ) : (
+            <Badge variant="warning">Awaiting Google connection</Badge>
+          )}
+          {(summary?.scopes ?? []).map((scope) => (
+            <Badge key={scope} variant="outline">
+              {shortenScope(scope)}
+            </Badge>
+          ))}
+        </CardContent>
+      </Card>
 
-              <h3 className="font-display text-xl font-semibold text-foreground mb-1">
-                Technology
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                B2B software companies serving the consumer ecosystem
-              </p>
-
-              <div className="flex items-center gap-3 pt-3 border-t border-border">
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="active" className="text-[10px]">
-                    {technology?.activeCompanies ?? 0} Active
-                  </Badge>
-                  <Badge variant="realized" className="text-[10px]">
-                    {technology?.realizedCompanies ?? 0} Realized
-                  </Badge>
-                </div>
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {technology?.totalCompanies ?? 0} companies
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Consumer Portfolio */}
-        <Link href="/dashboard/consumer">
-          <Card className="glass-card glass-card-hover group cursor-pointer transition-all duration-300 hover:translate-y-[-2px]">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="rounded-xl bg-secondary p-3">
-                  <ShoppingBag className="h-6 w-6 text-foreground" />
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-              </div>
-
-              <h3 className="font-display text-xl font-semibold text-foreground mb-1">
-                Consumer
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Championing brands that anchor modern life
-              </p>
-
-              <div className="flex items-center gap-3 pt-3 border-t border-border">
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="active" className="text-[10px]">
-                    {consumer?.activeCompanies ?? 0} Active
-                  </Badge>
-                  <Badge variant="realized" className="text-[10px]">
-                    {consumer?.realizedCompanies ?? 0} Realized
-                  </Badge>
-                </div>
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {consumer?.totalCompanies ?? 0} companies
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      <SectionHeader
-        title="Workspace"
-        description="Inbox and calendar context for your signed-in Google Workspace account"
-      />
-
-      <div className="grid md:grid-cols-2 gap-5 stagger-fade-in">
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-24">
+          <p className="text-sm text-destructive">Failed to load workspace summary: {error}</p>
+        </div>
+      ) : !summary?.connected ? (
         <Card className="glass-card">
-          <CardContent className="p-6 space-y-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
+          <CardContent className="space-y-3 p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-secondary p-3">
+                <ShieldCheck className="h-5 w-5 text-foreground" />
+              </div>
+              <div>
+                <h3 className="font-display text-xl font-semibold text-foreground">
+                  Workspace not connected
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Sign in with an allowed Google account to load Gmail and Calendar summaries here.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card className="glass-card">
+            <CardContent className="space-y-5 p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
                   <div className="rounded-xl bg-secondary p-3">
                     <Mail className="h-5 w-5 text-foreground" />
                   </div>
@@ -230,180 +132,90 @@ export default function DashboardPage() {
                       Inbox Summary
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Recent messages from your Google inbox
+                      Recent messages from your Google inbox.
                     </p>
                   </div>
                 </div>
+                {summary.gmail.unreadCount !== null ? (
+                  <Badge variant="warning">{summary.gmail.unreadCount} unread</Badge>
+                ) : null}
               </div>
-              {unreadCount !== null && unreadCount !== undefined && (
-                <Badge variant="warning">
-                  {unreadCount} unread
-                </Badge>
-              )}
-            </div>
 
-            {workspaceLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading inbox summary...
-              </div>
-            ) : workspaceError ? (
-              <p className="text-sm text-destructive">
-                Failed to load inbox summary: {workspaceError}
-              </p>
-            ) : !workspaceSummary?.connected ? (
-              <p className="text-sm text-muted-foreground">
-                Sign in with your VMG Google account to load Gmail and Calendar summaries.
-              </p>
-            ) : workspaceSummary.gmail.error ? (
-              <p className="text-sm text-muted-foreground">
-                {workspaceSummary.gmail.error}
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {workspaceSummary.gmail.address || session?.user?.email}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {workspaceSummary.gmail.inboxCount ?? 0} inbox messages
-                  </span>
-                </div>
-
+              {summary.gmail.error ? (
+                <p className="text-sm text-muted-foreground">{summary.gmail.error}</p>
+              ) : (
                 <div className="space-y-3">
-                  {workspaceSummary.gmail.messages.length > 0 ? (
-                    workspaceSummary.gmail.messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className="rounded-xl border border-border bg-background/70 p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-foreground">
-                              {message.subject}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {message.from}
-                            </p>
-                          </div>
-                          <span className="shrink-0 text-[11px] text-muted-foreground">
-                            {formatTimestamp(message.receivedAt)}
-                          </span>
+                  {summary.gmail.messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className="rounded-2xl border border-border/70 bg-background/60 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-foreground">
+                            {message.subject || "(No subject)"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{message.from}</p>
                         </div>
-                        <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                          {message.snippet}
+                        <span className="text-xs text-muted-foreground">
+                          {formatTimestamp(message.receivedAt)}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm text-muted-foreground">{message.snippet}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardContent className="space-y-5 p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-secondary p-3">
+                    <CalendarDays className="h-5 w-5 text-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl font-semibold text-foreground">
+                      Calendar Summary
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Upcoming events from your primary calendar.
+                    </p>
+                  </div>
+                </div>
+                {summary.calendar.upcomingCount !== null ? (
+                  <Badge variant="outline">{summary.calendar.upcomingCount} upcoming</Badge>
+                ) : null}
+              </div>
+
+              {summary.calendar.error ? (
+                <p className="text-sm text-muted-foreground">{summary.calendar.error}</p>
+              ) : (
+                <div className="space-y-3">
+                  {summary.calendar.events.map((event) => (
+                    <div
+                      key={event.id}
+                      className="rounded-2xl border border-border/70 bg-background/60 p-4"
+                    >
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">{event.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatEventRange(event.start, event.end)}
                         </p>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No recent inbox messages found.
-                    </p>
-                  )}
+                      {event.location ? (
+                        <p className="mt-3 text-sm text-muted-foreground">{event.location}</p>
+                      ) : null}
+                    </div>
+                  ))}
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardContent className="p-6 space-y-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <div className="rounded-xl bg-secondary p-3">
-                  <CalendarDays className="h-5 w-5 text-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-semibold text-foreground">
-                    Calendar Summary
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Upcoming events from your primary calendar
-                  </p>
-                </div>
-              </div>
-              {upcomingCount !== null && upcomingCount !== undefined && (
-                <Badge variant="secondary">
-                  {upcomingCount} upcoming
-                </Badge>
               )}
-            </div>
-
-            {workspaceLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading calendar summary...
-              </div>
-            ) : workspaceError ? (
-              <p className="text-sm text-destructive">
-                Failed to load calendar summary: {workspaceError}
-              </p>
-            ) : !workspaceSummary?.connected ? (
-              <p className="text-sm text-muted-foreground">
-                Your dashboard will show meeting summaries here after Google sign-in completes.
-              </p>
-            ) : workspaceSummary.calendar.error ? (
-              <p className="text-sm text-muted-foreground">
-                {workspaceSummary.calendar.error}
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {workspaceSummary.calendar.primaryCalendar || "Primary calendar"}
-                  </span>
-                  <span className="text-muted-foreground">
-                    Updated {formatTimestamp(workspaceSummary.generatedAt)}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  {workspaceSummary.calendar.events.length > 0 ? (
-                    workspaceSummary.calendar.events.map((event) => (
-                      <div
-                        key={event.id}
-                        className="rounded-xl border border-border bg-background/70 p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-foreground">
-                              {event.title}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {formatEventRange(event.start, event.end)}
-                            </p>
-                          </div>
-                          {event.htmlLink && (
-                            <a
-                              href={event.htmlLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                              aria-label={`Open ${event.title} in Google Calendar`}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          )}
-                        </div>
-                        {event.location && (
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            {event.location}
-                          </p>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No upcoming calendar events found.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

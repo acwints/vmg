@@ -41,8 +41,8 @@ export function CompanyCard({ company, className }: CompanyCardProps) {
 
   const basePath =
     company.portfolio === "technology"
-      ? "/dashboard/technology"
-      : "/dashboard/consumer";
+      ? "/dashboard/portfolio/technology"
+      : "/dashboard/portfolio/consumer";
 
   const primaryLeader = company.leaders[0];
 
