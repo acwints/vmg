@@ -7,9 +7,11 @@ import { SectionHeader } from "@/components/shared/section-header";
 import { StatsCard } from "@/components/shared/stats-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   CheckCircle2,
+  ExternalLink,
   Kanban,
   Loader2,
   ShoppingBag,
@@ -63,6 +65,19 @@ export default function PipelinePage() {
       <SectionHeader
         title="Pipeline"
         description="Strategy-level sourcing and diligence dashboards for current pipeline work"
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-2 text-xs">
+              <ExternalLink className="h-3.5 w-3.5" />
+              Connect to Affinity
+            </Button>
+            <span className="text-xs text-muted-foreground">or</span>
+            <Button variant="outline" size="sm" className="gap-2 text-xs">
+              <ExternalLink className="h-3.5 w-3.5" />
+              HubSpot
+            </Button>
+          </div>
+        }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

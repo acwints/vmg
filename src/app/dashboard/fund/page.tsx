@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useFundOverview } from "@/hooks/use-api";
 import { sortFunds } from "@/lib/fund-order";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   DollarSign,
+  ExternalLink,
   Landmark,
   Loader2,
   PieChart,
@@ -52,6 +54,12 @@ export default function FundPage() {
       <SectionHeader
         title="Fund"
         description="Fund-level dashboards and model entry points for each VMG vehicle."
+        action={
+          <Button variant="outline" size="sm" className="gap-2 text-xs">
+            <ExternalLink className="h-3.5 w-3.5" />
+            Connect to Carta
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

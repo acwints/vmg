@@ -11,10 +11,12 @@ import {
   isOnOrBeforeReferenceDate,
   isWithinReferenceWindow,
 } from "@/lib/reference-date";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Compass,
   Cpu,
+  ExternalLink,
   Loader2,
   RadioTower,
   ShoppingBag,
@@ -101,6 +103,12 @@ export default function IndustryPage() {
       <SectionHeader
         title="Industry"
         description="Market context, financing flow, and strategy views across Consumer and Technology."
+        action={
+          <Button variant="outline" size="sm" className="gap-2 text-xs">
+            <ExternalLink className="h-3.5 w-3.5" />
+            Connect to PitchBook
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
