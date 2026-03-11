@@ -15,10 +15,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <AppHeader />
           <div className="flex flex-1 min-h-0 overflow-hidden">
             <AppSidebar />
-            <div className="flex flex-1 min-h-0 flex-col overflow-y-auto">
-              <main className="flex-1 p-6">
+            <div className="flex flex-1 min-h-0 flex-col">
+              <div className="flex-1 overflow-y-auto p-6">
                 {children}
-              </main>
+              </div>
               <DashboardFooter />
             </div>
             <AssistantPanel />
