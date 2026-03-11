@@ -4,7 +4,6 @@ import { useSession } from "next-auth/react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Mail, CalendarDays, ShieldCheck, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { REFERENCE_DATE } from "@/lib/reference-date";
 import { useWorkspaceSummary } from "@/hooks/use-api";
 
