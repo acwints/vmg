@@ -29,7 +29,6 @@ import {
   LayoutDashboard,
   PanelLeftClose,
   PanelLeftOpen,
-  Settings,
 } from "lucide-react";
 
 type Icon = ElementType;
@@ -308,32 +307,6 @@ export function AppSidebar() {
             </div>
           )}
         </ScrollArea>
-
-        <Separator />
-
-        <div className="p-3">
-          {collapsed ? (
-            <SidebarIconLink
-              href="/dashboard/settings"
-              icon={Settings}
-              label="Settings"
-              active={pathname === "/dashboard/settings"}
-            />
-          ) : (
-            <Link
-              href="/dashboard/settings"
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-                pathname === "/dashboard/settings"
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
-            >
-              <Settings className="h-4 w-4 shrink-0" />
-              <span>Settings</span>
-            </Link>
-          )}
-        </div>
       </div>
     </TooltipProvider>
   );
