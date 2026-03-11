@@ -8,7 +8,7 @@ import {
   getMemos,
   getActivityLogs,
   toPortfolioCompany,
-  toPortfolioStats,
+
   getFundOverview,
   getFundDetail,
   getInvestments,
@@ -29,7 +29,7 @@ import {
   toPipelineDeal,
   type CompanyListResponse,
   type CompanyResponse,
-  type StatsResponse,
+
   type MemoResponse,
   type ActivityLogResponse,
   type FundOverviewApiResponse,
