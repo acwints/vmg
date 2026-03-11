@@ -28,7 +28,7 @@ export function AppHeader() {
       .slice(0, 2) || "VM";
 
   return (
-    <header className="flex items-center justify-between h-14 px-5 border-b border-border bg-card shrink-0">
+    <header className="flex items-center justify-between h-14 px-7 border-b border-border bg-card shrink-0">
       {/* Left — Logo */}
       <Link href="/dashboard" className="flex items-center gap-2.5">
         <Image

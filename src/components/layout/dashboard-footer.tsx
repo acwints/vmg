@@ -4,7 +4,7 @@ export function DashboardFooter() {
   return (
     <footer className="shrink-0 border-t border-border bg-card/50 px-6 py-3">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center gap-4">
           <Image
             src="/vmg-vector.svg"
             alt="VMG"

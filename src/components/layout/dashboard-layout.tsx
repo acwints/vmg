@@ -15,12 +15,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <AppHeader />
           <div className="flex flex-1 min-h-0 overflow-hidden">
             <AppSidebar />
-            <main className="flex-1 min-h-0 overflow-y-auto p-6">
-              {children}
-            </main>
+            <div className="flex flex-1 min-h-0 flex-col overflow-y-auto">
+              <main className="flex-1 p-6">
+                {children}
+              </main>
+              <DashboardFooter />
+            </div>
             <AssistantPanel />
           </div>
-          <DashboardFooter />
         </div>
       </AssistantProvider>
     </SidebarProvider>
