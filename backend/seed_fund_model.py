@@ -73,6 +73,14 @@ FUNDS = [
         "status": FundStatus.closed,
     },
     {
+        "name": "VMG Partners IV",
+        "slug": "vmg-iv",
+        "strategy": FundStrategy.consumer,
+        "vintage_year": 2017,
+        "committed_capital": 700_000_000,
+        "status": FundStatus.harvesting,
+    },
+    {
         "name": "VMG Partners V",
         "slug": "vmg-v",
         "strategy": FundStrategy.consumer,
@@ -117,7 +125,8 @@ FUND_BY_SLUG = {}
 CONSUMER_FUND_RANGES = [
     (2009, "vmg-i"),
     (2013, "vmg-ii"),
-    (2020, "vmg-iii"),
+    (2016, "vmg-iii"),
+    (2020, "vmg-iv"),
     (2024, "vmg-v"),
     (9999, "vmg-vi"),
 ]
@@ -128,7 +137,7 @@ TECH_FUND_RANGES = [
 ]
 
 # For realized companies with no investment_year, distribute across older funds
-CONSUMER_REALIZED_FUNDS = ["vmg-i", "vmg-ii", "vmg-iii"]
+CONSUMER_REALIZED_FUNDS = ["vmg-i", "vmg-ii", "vmg-iii", "vmg-iv"]
 TECH_REALIZED_FUNDS = ["catalyst-i"]
 
 
