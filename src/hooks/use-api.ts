@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
   getCompanies,
   getCompany,
-  getStats,
+
   getMemos,
   getActivityLogs,
   toPortfolioCompany,
@@ -114,12 +114,28 @@ export function useCompany(slug: string) {
 }
 
 export function useStats() {
-  const { data, loading, error } = useApi<StatsResponse>(getStats, []);
+  const { data, loading, error } = useApi<CompanyListResponse>(
+    () => getCompanies(),
+    []
+  );
+
+  function deriveStats(companies: CompanyResponse[]) {
+    return {
+      totalCompanies: companies.length,
+      activeCompanies: companies.filter((c) => c.status === "active").length,
+      realizedCompanies: companies.filter((c) => c.status === "realized").length,
+      sectors: new Set(companies.map((c) => c.sector)).size,
+    };
+  }
+
+  const all = data?.companies ?? [];
+  const consumerList = all.filter((c) => c.portfolio === "consumer");
+  const technologyList = all.filter((c) => c.portfolio === "technology");
 
   return {
-    overall: data ? toPortfolioStats(data.overall) : null,
-    technology: data ? toPortfolioStats(data.technology) : null,
-    consumer: data ? toPortfolioStats(data.consumer) : null,
+    overall: data ? deriveStats(all) : null,
+    technology: data ? deriveStats(technologyList) : null,
+    consumer: data ? deriveStats(consumerList) : null,
     loading,
     error,
   };
