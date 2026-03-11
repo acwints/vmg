@@ -6,6 +6,7 @@ import { StatsCard } from "@/components/shared/stats-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useFundOverview } from "@/hooks/use-api";
+import { sortFunds } from "@/lib/fund-order";
 import {
   ArrowRight,
   DollarSign,
@@ -44,6 +45,8 @@ export default function FundPage() {
     );
   }
 
+  const orderedFunds = sortFunds(overview.funds);
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 animate-fade-in">
       <SectionHeader
@@ -63,7 +66,7 @@ export default function FundPage() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {overview.funds.map((fund) => (
+        {orderedFunds.map((fund) => (
           <Link key={fund.id} href={`/dashboard/fund/${fund.slug}`}>
             <Card className="glass-card glass-card-hover group h-full cursor-pointer transition-all duration-300 hover:translate-y-[-2px]">
               <CardContent className="space-y-4 p-6">

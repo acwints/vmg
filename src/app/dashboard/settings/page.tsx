@@ -63,7 +63,7 @@ const integrations = [
     description: "Fund reporting, LP statements, and performance recordkeeping.",
   },
   {
-    name: "Cobalt (FactSet)",
+    name: "Cobalt (by FactSet)",
     icon: Activity,
     category: "Portfolio Data",
     description: "Portfolio monitoring, valuation support, and investor reporting.",

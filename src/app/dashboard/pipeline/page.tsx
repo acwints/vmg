@@ -69,7 +69,7 @@ export default function PipelinePage() {
         <StatsCard title="Total Deals" value={deals.length} icon={Kanban} />
         <StatsCard title="Active" value={activeConsumer.length + activeTechnology.length} icon={Target} />
         <StatsCard title="Closed Won" value={closedDeals.length} icon={CheckCircle2} />
-        <StatsCard title="Memo Objects" value={closedDeals.length} description="attached to closed deals" icon={FileText} />
+        <StatsCard title="Memos" value={closedDeals.length} description="attached to closed deals" icon={FileText} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
@@ -126,23 +126,6 @@ export default function PipelinePage() {
         </Link>
       </div>
 
-      <Card className="glass-card">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-secondary p-3">
-              <FileText className="h-5 w-5 text-foreground" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">Memo handling</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                IC memos are treated as supporting objects attached to closed won deals, not as a
-                standalone navigation section. The detailed pipeline boards remain the operating
-                view for sourcing, stage changes, and diligence notes.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

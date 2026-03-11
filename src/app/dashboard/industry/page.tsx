@@ -100,7 +100,7 @@ export default function IndustryPage() {
     <div className="mx-auto w-full max-w-7xl space-y-8 animate-fade-in">
       <SectionHeader
         title="Industry"
-        description="Macro context, market maps, and strategy-specific industry views for Consumer and Technology."
+        description="Market context, financing flow, and strategy views across Consumer and Technology."
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -138,7 +138,7 @@ export default function IndustryPage() {
                   Consumer
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Category maps, financing activity, and market signals around branded consumer sectors.
+                  Category structure, funding cadence, and market signals across branded consumer verticals.
                 </p>
               </div>
               <Badge variant="outline">{consumerCompanies.length} tracked companies</Badge>
@@ -160,7 +160,7 @@ export default function IndustryPage() {
                   Technology
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Software and marketplace landscape tracking with market and funding context.
+                  Software and marketplace landscape views with current market and financing context.
                 </p>
               </div>
               <Badge variant="outline">{technologyCompanies.length} tracked companies</Badge>
@@ -176,7 +176,7 @@ export default function IndustryPage() {
               Macro context
             </h3>
             <p className="text-sm text-muted-foreground">
-              Portfolio-level market framing as of March 11, 2026.
+              The high-level market read feeding investment work as of March 11, 2026.
             </p>
           </div>
 

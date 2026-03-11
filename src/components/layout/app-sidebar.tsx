@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFundOverview } from "@/hooks/use-api";
 import { useSidebar } from "@/context/sidebar-context";
+import { sortFunds } from "@/lib/fund-order";
 import { cn } from "@/lib/utils";
 import {
   Collapsible,
@@ -43,6 +44,7 @@ interface NavGroup {
   href: string;
   icon: Icon;
   children?: NavChild[];
+  description?: string;
 }
 
 function isPathActive(pathname: string, href: string) {
@@ -141,7 +143,6 @@ function SidebarSection({
             <div className="ml-5 space-y-1 border-l border-border/70 pl-3">
               {group.children.map((child) => {
                 const childActive = isPathActive(pathname, child.href);
-
                 return (
                   <Link
                     key={child.href}
@@ -164,6 +165,11 @@ function SidebarSection({
                 );
               })}
             </div>
+            {group.description ? (
+              <p className="px-4 text-xs italic leading-snug text-muted-foreground/80">
+                {group.description}
+              </p>
+            ) : null}
           </CollapsibleContent>
         ) : null}
       </div>
@@ -183,10 +189,10 @@ export function AppSidebar() {
   });
 
   const fundChildren =
-    overview?.funds.map((fund) => ({
+    overview ? sortFunds(overview.funds).map((fund) => ({
       label: fund.name,
       href: `/dashboard/fund/${fund.slug}`,
-    })) ?? [];
+    })) : [];
 
   const navGroups: NavGroup[] = [
     {
@@ -206,6 +212,7 @@ export function AppSidebar() {
         { label: "Consumer", href: "/dashboard/pipeline/consumer" },
         { label: "Technology", href: "/dashboard/pipeline/technology" },
       ],
+      description: "Memos capture the narrative on closed-won deals so the story lives with the investment.",
     },
     {
       label: "Fund",
@@ -221,6 +228,7 @@ export function AppSidebar() {
         { label: "Consumer", href: "/dashboard/industry/consumer" },
         { label: "Technology", href: "/dashboard/industry/technology" },
       ],
+      description: "Macro narratives and thematic context for every thesis are curated here.",
     },
   ];
 

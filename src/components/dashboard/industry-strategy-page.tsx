@@ -26,13 +26,13 @@ const portfolioCopy: Record<
   consumer: {
     title: "Consumer Industry",
     description:
-      "Market map, sector exposure, and financing signals across branded consumer categories.",
+      "Category shape, portfolio exposure, and financing activity across branded consumer markets.",
     sectorOrder: ["beauty", "food-bev", "wellness", "pet"],
   },
   technology: {
     title: "Technology Industry",
     description:
-      "Software and marketplace landscape with live financing activity and portfolio signal tracking.",
+      "Landscape, portfolio signal, and financing flow across software and marketplace categories.",
     sectorOrder: ["software", "marketplace"],
   },
 };
@@ -157,7 +157,7 @@ export function IndustryStrategyPage({ strategy }: { strategy: Portfolio }) {
                 Portfolio footprint
               </h3>
               <p className="text-sm text-muted-foreground">
-                Companies currently tracked under the {strategy} industry lens.
+                Companies currently tracked through the {strategy} market lens.
               </p>
             </div>
 
@@ -176,7 +176,7 @@ export function IndustryStrategyPage({ strategy }: { strategy: Portfolio }) {
                 Financing signals
               </h3>
               <p className="text-sm text-muted-foreground">
-                Funding rounds from the last 12 months as of March 11, 2026.
+                Funding activity from the last 12 months as of March 11, 2026.
               </p>
             </div>
 
@@ -206,7 +206,7 @@ export function IndustryStrategyPage({ strategy }: { strategy: Portfolio }) {
                 ))
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No recent financing records are available for this strategy.
+                  No financings from the last 12 months are showing up for this strategy.
                 </p>
               )}
             </div>
