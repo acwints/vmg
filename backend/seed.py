@@ -1,0 +1,989 @@
+"""
+Seed script to populate the VMG database with portfolio company data.
+
+Usage:
+    python seed.py
+
+Requires DATABASE_URL environment variable (or uses default from app.config).
+"""
+
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from sqlalchemy.orm import Session
+from app.database import engine, SessionLocal, Base
+from app.models import Company, Leader, Portfolio, Sector, CompanyStatus
+
+
+# ---------------------------------------------------------------------------
+# Seed data
+# ---------------------------------------------------------------------------
+
+COMPANIES = [
+    # ── Technology — Software ──
+    {
+        "name": "Attentive",
+        "slug": "attentive",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "AI-powered SMS and email marketing platform for personalized mobile messaging.",
+        "category": "SMS & Email Marketing",
+        "website": "https://www.attentivemobile.com",
+        "domain": "attentivemobile.com",
+        "logo_url": "https://logo.clearbit.com/attentivemobile.com",
+        "founded_year": 2016,
+        "investment_year": 2019,
+        "leaders": [
+            {"name": "Brian Long", "title": "Co-Founder & Executive Chairman", "linkedin_url": "https://www.linkedin.com/in/brianclong"},
+            {"name": "Amit Jhawar", "title": "CEO", "linkedin_url": "https://www.linkedin.com/in/amitjhawar"},
+        ],
+    },
+    {
+        "name": "Afresh",
+        "slug": "afresh",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "AI-powered fresh food supply chain optimization platform for grocery retailers.",
+        "category": "Supply Chain / Grocery Tech",
+        "website": "https://www.afresh.com",
+        "domain": "afresh.com",
+        "logo_url": "https://logo.clearbit.com/afresh.com",
+        "founded_year": 2017,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Matt Schwartz", "title": "CEO & Co-Founder", "linkedin_url": "https://www.linkedin.com/in/matt-schwartz-0b76a326"},
+        ],
+    },
+    {
+        "name": "Auxia",
+        "slug": "auxia",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Agentic AI marketing platform for 1:1 customer journey orchestration.",
+        "category": "AI Marketing / Personalization",
+        "website": "https://www.auxia.io",
+        "domain": "auxia.io",
+        "logo_url": "https://logo.clearbit.com/auxia.io",
+        "founded_year": 2022,
+        "investment_year": 2023,
+        "leaders": [
+            {"name": "Sandeep Menon", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/sandeep-menon-1087901"},
+        ],
+    },
+    {
+        "name": "Boulevard",
+        "slug": "boulevard",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Client experience platform for appointment-based self-care businesses like salons and spas.",
+        "category": "Salon & Spa Management Software",
+        "website": "https://www.joinblvd.com",
+        "domain": "joinblvd.com",
+        "logo_url": "https://logo.clearbit.com/joinblvd.com",
+        "founded_year": 2016,
+        "investment_year": 2020,
+        "leaders": [
+            {"name": "Matt Danna", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/mattdanna"},
+        ],
+    },
+    {
+        "name": "Claim",
+        "slug": "claim",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Social rewards app transforming how Gen Z discovers and engages with brands.",
+        "category": "Social Commerce / Rewards",
+        "website": "https://www.claim.co",
+        "domain": "claim.co",
+        "logo_url": "https://logo.clearbit.com/claim.co",
+        "founded_year": 2021,
+        "investment_year": 2023,
+        "leaders": [
+            {"name": "Sam Obletz", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/samobletz"},
+        ],
+    },
+    {
+        "name": "Daasity",
+        "slug": "daasity",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Omnichannel ecommerce analytics platform built for consumer product brands.",
+        "category": "Ecommerce Analytics",
+        "website": "https://www.daasity.com",
+        "domain": "daasity.com",
+        "logo_url": "https://logo.clearbit.com/daasity.com",
+        "founded_year": 2017,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Dan LeBlanc", "title": "CEO & Co-Founder", "linkedin_url": "https://www.linkedin.com/in/ddleblanc"},
+        ],
+    },
+    {
+        "name": "Fermat",
+        "slug": "fermat",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "AI-powered commerce experience platform for building high-converting shopping experiences.",
+        "category": "Commerce Experience Platform",
+        "website": "https://www.fermatcommerce.com",
+        "domain": "fermatcommerce.com",
+        "logo_url": "https://logo.clearbit.com/fermatcommerce.com",
+        "founded_year": 2021,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Rishabh Jain", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/rishabhmjain"},
+        ],
+    },
+    {
+        "name": "Good Face Project",
+        "slug": "good-face-project",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "AI-powered cosmetic formulation, regulatory compliance, and innovation platform for beauty brands.",
+        "category": "Beauty Tech / Cosmetic Formulation",
+        "website": "https://thegoodfaceproject.com",
+        "domain": "thegoodfaceproject.com",
+        "logo_url": "https://logo.clearbit.com/thegoodfaceproject.com",
+        "founded_year": 2018,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Iva Teixeira", "title": "CEO & Co-Founder", "linkedin_url": "https://www.linkedin.com/in/iva-yovchev-teixeira"},
+        ],
+    },
+    {
+        "name": "Gradial",
+        "slug": "gradial",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "AI agent platform that automates enterprise marketing content operations and workflows.",
+        "category": "AI Marketing Automation",
+        "website": "https://www.gradial.com",
+        "domain": "gradial.com",
+        "logo_url": "https://logo.clearbit.com/gradial.com",
+        "founded_year": 2023,
+        "investment_year": 2023,
+        "leaders": [
+            {"name": "Doug Tallmadge", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/doug-tallmadge-14166075"},
+        ],
+    },
+    {
+        "name": "Lyric",
+        "slug": "lyric",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "AI platform for supply chain modeling, planning, and autonomous operations.",
+        "category": "Supply Chain AI",
+        "website": "https://lyric.tech",
+        "domain": "lyric.tech",
+        "logo_url": "https://logo.clearbit.com/lyric.tech",
+        "founded_year": 2022,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Ganesh Ramakrishna", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/ganeshatalk"},
+        ],
+    },
+    {
+        "name": "Milk Moovement",
+        "slug": "milk-moovement",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Dairy supply chain management software tracking raw milk from farm to processor.",
+        "category": "Dairy Supply Chain Software",
+        "website": "https://www.milkmoovement.com",
+        "domain": "milkmoovement.com",
+        "logo_url": "https://logo.clearbit.com/milkmoovement.com",
+        "founded_year": 2018,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Jon King", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/jonathanjking"},
+        ],
+    },
+    {
+        "name": "parcelLab",
+        "slug": "parcellab",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Post-purchase experience platform for branded order tracking, communication, and returns.",
+        "category": "Post-Purchase Experience",
+        "website": "https://parcellab.com",
+        "domain": "parcellab.com",
+        "logo_url": "https://logo.clearbit.com/parcellab.com",
+        "founded_year": 2015,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Tobias Buxhoidt", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/tobi-buxhoidt-26290498"},
+        ],
+    },
+    {
+        "name": "Pray.com",
+        "slug": "pray-com",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "The #1 app for daily prayer, faith-based audio content, and spiritual wellness.",
+        "category": "Faith & Wellness App",
+        "website": "https://www.pray.com",
+        "domain": "pray.com",
+        "logo_url": "https://logo.clearbit.com/pray.com",
+        "founded_year": 2016,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Steve Gatena", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/stevegatena"},
+        ],
+    },
+    {
+        "name": "Rinsed",
+        "slug": "rinsed",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "CRM and membership management platform purpose-built for the car wash industry.",
+        "category": "Car Wash CRM / SaaS",
+        "website": "https://www.rinsed.com",
+        "domain": "rinsed.com",
+        "logo_url": "https://logo.clearbit.com/rinsed.com",
+        "founded_year": 2019,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Austin Esecson", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/austinesecson"},
+        ],
+    },
+    {
+        "name": "Shogun",
+        "slug": "shogun",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Ecommerce experience platform empowering brands to build high-converting storefronts.",
+        "category": "Ecommerce Page Builder",
+        "website": "https://getshogun.com",
+        "domain": "getshogun.com",
+        "logo_url": "https://logo.clearbit.com/getshogun.com",
+        "founded_year": 2015,
+        "investment_year": 2020,
+        "leaders": [
+            {"name": "Nick Raushenbush", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/nickraushenbush"},
+        ],
+    },
+    {
+        "name": "Specright",
+        "slug": "specright",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Cloud-based specification management platform for packaging and supply chain data.",
+        "category": "Specification Management",
+        "website": "https://www.specright.com",
+        "domain": "specright.com",
+        "logo_url": "https://logo.clearbit.com/specright.com",
+        "founded_year": 2016,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Matthew Wright", "title": "Founder & Executive Chairman", "linkedin_url": "https://www.linkedin.com/in/matthew-wright-specright"},
+        ],
+    },
+    {
+        "name": "Tracksuit",
+        "slug": "tracksuit",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Always-on brand tracking platform making brand awareness measurement accessible and affordable.",
+        "category": "Brand Tracking / Market Research",
+        "website": "https://www.gotracksuit.com",
+        "domain": "gotracksuit.com",
+        "logo_url": "https://logo.clearbit.com/gotracksuit.com",
+        "founded_year": 2021,
+        "investment_year": 2023,
+        "leaders": [
+            {"name": "Matt Herbert", "title": "Co-Founder & Co-CEO", "linkedin_url": "https://www.linkedin.com/in/herbertmattj"},
+            {"name": "Connor Archbold", "title": "Co-Founder & Co-CEO", "linkedin_url": "https://www.linkedin.com/in/connor-archbold"},
+        ],
+    },
+    {
+        "name": "Zitcha",
+        "slug": "zitcha",
+        "portfolio": "technology",
+        "sector": "software",
+        "status": "active",
+        "description": "Retail media platform enabling retailers to build and manage advertising networks across all channels.",
+        "category": "Retail Media Platform",
+        "website": "https://www.zitcha.com",
+        "domain": "zitcha.com",
+        "logo_url": "https://logo.clearbit.com/zitcha.com",
+        "founded_year": 2022,
+        "investment_year": 2023,
+        "leaders": [
+            {"name": "Troy Townsend", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/troytownsend1"},
+        ],
+    },
+
+    # ── Technology — Marketplaces ──
+    {
+        "name": "Musely",
+        "slug": "musely",
+        "portfolio": "technology",
+        "sector": "marketplace",
+        "status": "realized",
+        "description": "Prescription skincare and telehealth platform making dermatological treatments accessible.",
+        "category": "Telehealth / Prescription Skincare",
+        "website": "https://www.musely.com",
+        "domain": "musely.com",
+        "logo_url": "https://logo.clearbit.com/musely.com",
+        "founded_year": 2012,
+        "exit_year": 2023,
+        "leaders": [
+            {"name": "Jack Jia", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/jack-jia-2923a4"},
+        ],
+    },
+    {
+        "name": "Nowsta",
+        "slug": "nowsta",
+        "portfolio": "technology",
+        "sector": "marketplace",
+        "status": "active",
+        "description": "Workforce management platform for scheduling, time tracking, and payroll for hourly workers.",
+        "category": "Workforce Management",
+        "website": "https://www.nowsta.com",
+        "domain": "nowsta.com",
+        "logo_url": "https://logo.clearbit.com/nowsta.com",
+        "founded_year": 2015,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Nicholas Lillios", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/nicholas-lillios-ba52b8196"},
+        ],
+    },
+    {
+        "name": "Nuvemshop",
+        "slug": "nuvemshop",
+        "portfolio": "technology",
+        "sector": "marketplace",
+        "status": "active",
+        "description": "Latin America's leading ecommerce platform powering 120,000+ online stores across the region.",
+        "category": "Ecommerce Platform (LATAM)",
+        "website": "https://www.nuvemshop.com.br",
+        "domain": "nuvemshop.com.br",
+        "logo_url": "https://logo.clearbit.com/nuvemshop.com.br",
+        "founded_year": 2011,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Santiago Sosa", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/ssosa"},
+        ],
+    },
+    {
+        "name": "Swell",
+        "slug": "swell",
+        "portfolio": "technology",
+        "sector": "marketplace",
+        "status": "active",
+        "description": "API-first headless commerce platform enabling brands to build custom ecommerce experiences.",
+        "category": "Headless Commerce Platform",
+        "website": "https://www.swell.is",
+        "domain": "swell.is",
+        "logo_url": "https://logo.clearbit.com/swell.is",
+        "founded_year": 2019,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Eric Ingram", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/ericingram"},
+        ],
+    },
+    {
+        "name": "Weee!",
+        "slug": "weee",
+        "portfolio": "technology",
+        "sector": "marketplace",
+        "status": "active",
+        "description": "North America's largest Asian and Hispanic online grocery platform delivering authentic foods.",
+        "category": "Online Grocery Delivery",
+        "website": "https://www.sayweee.com",
+        "domain": "sayweee.com",
+        "logo_url": "https://logo.clearbit.com/sayweee.com",
+        "founded_year": 2015,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Larry Liu", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/larrymliu"},
+        ],
+    },
+
+    # ── Consumer — Beauty & Personal Care ──
+    {
+        "name": "Drunk Elephant",
+        "slug": "drunk-elephant",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "realized",
+        "description": "Clean-compatible skincare brand known for biocompatible formulations and cult Sephora following.",
+        "website": "https://www.drunkelephant.com",
+        "domain": "drunkelephant.com",
+        "logo_url": "https://logo.clearbit.com/drunkelephant.com",
+        "founded_year": 2012,
+        "exit_year": 2019,
+        "acquirer": "Shiseido",
+        "leaders": [
+            {"name": "Tiffany Masterson", "title": "Founder & Chief Creative Officer", "linkedin_url": "https://www.linkedin.com/in/tiffanymasterson"},
+        ],
+    },
+    {
+        "name": "K18",
+        "slug": "k18",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "realized",
+        "description": "Biotech haircare brand with a patented peptide that molecularly repairs hair damage in 4 minutes.",
+        "website": "https://www.k18hair.com",
+        "domain": "k18hair.com",
+        "logo_url": "https://logo.clearbit.com/k18hair.com",
+        "founded_year": 2020,
+        "acquirer": "Unilever",
+        "leaders": [
+            {"name": "Suveen Sahib", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/suveen-sahib"},
+        ],
+    },
+    {
+        "name": "Sun Bum",
+        "slug": "sun-bum",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "realized",
+        "description": "Sun care and hair care lifestyle brand inspired by the surf culture of Cocoa Beach, Florida.",
+        "website": "https://www.sunbum.com",
+        "domain": "sunbum.com",
+        "logo_url": "https://logo.clearbit.com/sunbum.com",
+        "founded_year": 2010,
+        "exit_year": 2019,
+        "acquirer": "SC Johnson",
+        "leaders": [
+            {"name": "Tom Rinks", "title": "Co-Founder & President", "linkedin_url": "https://www.linkedin.com/in/tom-rinks"},
+        ],
+    },
+    {
+        "name": "Kosas",
+        "slug": "kosas",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "active",
+        "description": "Clean makeup brand making skincare-powered cosmetics clinically proven to improve skin health.",
+        "website": "https://www.kosas.com",
+        "domain": "kosas.com",
+        "logo_url": "https://logo.clearbit.com/kosas.com",
+        "founded_year": 2015,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Sheena Zadeh-Daly", "title": "Founder", "linkedin_url": "https://www.linkedin.com/in/sheena-zadeh-49ab79200"},
+        ],
+    },
+    {
+        "name": "Briogeo",
+        "slug": "briogeo",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "realized",
+        "description": "Clean, high-performance haircare brand that pioneered the 'skinification' of hair.",
+        "website": "https://www.briogeohair.com",
+        "domain": "briogeohair.com",
+        "logo_url": "https://logo.clearbit.com/briogeohair.com",
+        "founded_year": 2013,
+        "exit_year": 2022,
+        "acquirer": "Wella",
+        "leaders": [
+            {"name": "Nancy Twine", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/nancytwine"},
+        ],
+    },
+    {
+        "name": "Danessa Myricks Beauty",
+        "slug": "danessa-myricks",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "active",
+        "description": "Inclusive, innovative color cosmetics brand founded by a veteran makeup artist.",
+        "website": "https://www.danessamyricksbeauty.com",
+        "domain": "danessamyricksbeauty.com",
+        "logo_url": "https://logo.clearbit.com/danessamyricksbeauty.com",
+        "founded_year": 2015,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Danessa Myricks", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/danessa-myricks-16711a3a"},
+        ],
+    },
+    {
+        "name": "Necessaire",
+        "slug": "necessaire",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "active",
+        "description": "Clean body care brand bringing prestige skincare standards to body wash, lotion, and beyond.",
+        "website": "https://www.necessaire.com",
+        "domain": "necessaire.com",
+        "logo_url": "https://logo.clearbit.com/necessaire.com",
+        "founded_year": 2018,
+        "investment_year": 2021,
+        "leaders": [
+            {"name": "Randi Christiansen", "title": "Co-Founder", "linkedin_url": "https://www.linkedin.com/in/randi-christiansen-b631264"},
+        ],
+    },
+    {
+        "name": "Snif",
+        "slug": "snif",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "active",
+        "description": "Direct-to-consumer fragrance brand making high-quality, accessible, non-toxic scents.",
+        "website": "https://www.snif.co",
+        "domain": "snif.co",
+        "logo_url": "https://logo.clearbit.com/snif.co",
+        "founded_year": 2020,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Bryan Edwards", "title": "Co-Founder & Co-CEO", "linkedin_url": "https://www.linkedin.com/in/edwardsbryan"},
+        ],
+    },
+    {
+        "name": "Shani Darden Skin Care",
+        "slug": "shani-darden",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "active",
+        "description": "Celebrity esthetician-founded clinical skincare line best known for its Retinol Reform serum.",
+        "website": "https://www.shanidarden.com",
+        "domain": "shanidarden.com",
+        "logo_url": "https://logo.clearbit.com/shanidarden.com",
+        "founded_year": 2013,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Shani Darden", "title": "Founder", "linkedin_url": "https://www.linkedin.com/in/shani-darden-847620a4"},
+        ],
+    },
+    {
+        "name": "BeautyStat",
+        "slug": "beautystat",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "active",
+        "description": "Cosmetic chemist-founded skincare brand with patented stabilized Vitamin C technology.",
+        "website": "https://www.beautystat.com",
+        "domain": "beautystat.com",
+        "logo_url": "https://logo.clearbit.com/beautystat.com",
+        "founded_year": 2019,
+        "investment_year": 2023,
+        "leaders": [
+            {"name": "Ron Robinson", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/ronrobinsonbeautystat"},
+        ],
+    },
+    {
+        "name": "Colorescience",
+        "slug": "colorescience",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "realized",
+        "description": "Mineral sunscreen and skincare brand that pioneered the first powder mineral sunscreen.",
+        "website": "https://www.colorescience.com",
+        "domain": "colorescience.com",
+        "logo_url": "https://logo.clearbit.com/colorescience.com",
+        "founded_year": 2000,
+        "leaders": [
+            {"name": "Diane Ranger", "title": "Founder", "linkedin_url": "https://www.linkedin.com/in/diane-ranger-44595813"},
+        ],
+    },
+    {
+        "name": "The Honey Pot Company",
+        "slug": "the-honey-pot-company",
+        "portfolio": "consumer",
+        "sector": "beauty",
+        "status": "active",
+        "description": "Plant-based feminine care brand offering natural, chemical-free hygiene products.",
+        "website": "https://www.thehoneypot.co",
+        "domain": "thehoneypot.co",
+        "logo_url": "https://logo.clearbit.com/thehoneypot.co",
+        "founded_year": 2014,
+        "investment_year": 2018,
+        "leaders": [
+            {"name": "Beatrice Dixon", "title": "CEO & Co-Founder", "linkedin_url": "https://www.linkedin.com/in/beatrice-dixon"},
+        ],
+    },
+
+    # ── Consumer — Food & Beverage ──
+    {
+        "name": "KIND",
+        "slug": "kind",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "realized",
+        "description": "Healthy snack brand known for its whole-ingredient fruit and nut bars and social mission.",
+        "website": "https://www.kindsnacks.com",
+        "domain": "kindsnacks.com",
+        "logo_url": "https://logo.clearbit.com/kindsnacks.com",
+        "founded_year": 2004,
+        "exit_year": 2020,
+        "acquirer": "Mars",
+        "leaders": [
+            {"name": "Daniel Lubetzky", "title": "Founder & Executive Chairman", "linkedin_url": "https://www.linkedin.com/in/daniellubetzky"},
+        ],
+    },
+    {
+        "name": "Justin's",
+        "slug": "justins",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "realized",
+        "description": "Premium nut butter and organic chocolate brand started from a home kitchen in Boulder, Colorado.",
+        "website": "https://www.justins.com",
+        "domain": "justins.com",
+        "logo_url": "https://logo.clearbit.com/justins.com",
+        "founded_year": 2004,
+        "exit_year": 2016,
+        "acquirer": "Hormel",
+        "leaders": [
+            {"name": "Justin Gold", "title": "Founder", "linkedin_url": "https://www.linkedin.com/in/justin-gold"},
+        ],
+    },
+    {
+        "name": "Pirate's Booty",
+        "slug": "pirates-booty",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "realized",
+        "description": "Baked puffed rice and corn snack brand known for its aged white cheddar flavor.",
+        "website": "https://www.piratesbooty.com",
+        "domain": "piratesbooty.com",
+        "logo_url": "https://logo.clearbit.com/piratesbooty.com",
+        "founded_year": 1987,
+        "acquirer": "Hershey",
+        "leaders": [
+            {"name": "Robert Ehrlich", "title": "Founder"},
+        ],
+    },
+    {
+        "name": "Spindrift",
+        "slug": "spindrift",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "realized",
+        "description": "First sparkling water brand made with real squeezed fruit, no artificial sweeteners or flavors.",
+        "website": "https://www.drinkspindrift.com",
+        "domain": "drinkspindrift.com",
+        "logo_url": "https://logo.clearbit.com/drinkspindrift.com",
+        "founded_year": 2010,
+        "leaders": [
+            {"name": "Bill Creelman", "title": "Founder & Chairman", "linkedin_url": "https://www.linkedin.com/in/bill-creelman-889b8011"},
+        ],
+    },
+    {
+        "name": "Perfect Bar",
+        "slug": "perfect-bar",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "realized",
+        "description": "The original refrigerated protein bar made with whole food ingredients and a family recipe.",
+        "website": "https://www.perfectbar.com",
+        "domain": "perfectbar.com",
+        "logo_url": "https://logo.clearbit.com/perfectbar.com",
+        "founded_year": 2005,
+        "leaders": [
+            {"name": "Bill Keith", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/bill-keith-48a77a14"},
+        ],
+    },
+    {
+        "name": "Quest Nutrition",
+        "slug": "quest-nutrition",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "realized",
+        "description": "High-protein, low-sugar nutrition brand that became one of the fastest-growing US companies.",
+        "website": "https://www.questnutrition.com",
+        "domain": "questnutrition.com",
+        "logo_url": "https://logo.clearbit.com/questnutrition.com",
+        "founded_year": 2010,
+        "exit_year": 2019,
+        "acquirer": "Simply Good Foods",
+        "leaders": [
+            {"name": "Tom Bilyeu", "title": "Co-Founder", "linkedin_url": "https://www.linkedin.com/in/thomas-bilyeu-70b15740"},
+        ],
+    },
+    {
+        "name": "Ghost",
+        "slug": "ghost",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "active",
+        "description": "Lifestyle sports nutrition and energy drink brand with licensed flavor collaborations and full label transparency.",
+        "website": "https://www.ghostlifestyle.com",
+        "domain": "ghostlifestyle.com",
+        "logo_url": "https://logo.clearbit.com/ghostlifestyle.com",
+        "founded_year": 2016,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Dan Lourenco", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/ghostdan"},
+        ],
+    },
+    {
+        "name": "Bobbie",
+        "slug": "bobbie",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "active",
+        "description": "Mom-founded organic infant formula company offering the first European-style formula to meet FDA standards.",
+        "website": "https://www.hibobbie.com",
+        "domain": "hibobbie.com",
+        "logo_url": "https://logo.clearbit.com/hibobbie.com",
+        "founded_year": 2018,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Laura Modi", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/laurahughes6"},
+        ],
+    },
+    {
+        "name": "Milton's Craft Bakers",
+        "slug": "miltons",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "active",
+        "description": "Craft bakery brand specializing in gluten-free crackers and cauliflower crust pizza.",
+        "website": "https://www.miltonscraftbakers.com",
+        "domain": "miltonscraftbakers.com",
+        "logo_url": "https://logo.clearbit.com/miltonscraftbakers.com",
+        "founded_year": 1997,
+        "investment_year": 2021,
+        "leaders": [],
+    },
+    {
+        "name": "Lily's Sweets",
+        "slug": "lilys-sweets",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "realized",
+        "description": "No-sugar-added chocolate and confections brand sweetened with stevia and erythritol.",
+        "website": "https://www.lilys.com",
+        "domain": "lilys.com",
+        "logo_url": "https://logo.clearbit.com/lilys.com",
+        "founded_year": 2010,
+        "exit_year": 2021,
+        "acquirer": "Hershey",
+        "leaders": [
+            {"name": "Cynthia Tice", "title": "Co-Founder", "linkedin_url": "https://www.linkedin.com/in/cynthia-tice-4a87a648"},
+        ],
+    },
+    {
+        "name": "Daily Harvest",
+        "slug": "daily-harvest",
+        "portfolio": "consumer",
+        "sector": "food-bev",
+        "status": "realized",
+        "description": "Plant-based frozen meal delivery service making it easy to eat more sustainably grown produce.",
+        "website": "https://www.daily-harvest.com",
+        "domain": "daily-harvest.com",
+        "logo_url": "https://logo.clearbit.com/daily-harvest.com",
+        "founded_year": 2015,
+        "leaders": [
+            {"name": "Rachel Drori", "title": "Founder & Executive Chair", "linkedin_url": "https://www.linkedin.com/in/racheldrori"},
+        ],
+    },
+
+    # ── Consumer — Wellness & Fitness ──
+    {
+        "name": "[solidcore]",
+        "slug": "solidcore",
+        "portfolio": "consumer",
+        "sector": "wellness",
+        "status": "active",
+        "description": "High-intensity, low-impact Pilates-inspired boutique fitness chain with 160+ locations nationwide.",
+        "website": "https://www.solidcore.co",
+        "domain": "solidcore.co",
+        "logo_url": "https://logo.clearbit.com/solidcore.co",
+        "founded_year": 2013,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Anne Mahlum", "title": "Founder", "linkedin_url": "https://www.linkedin.com/in/anne-mahlum"},
+        ],
+    },
+    {
+        "name": "Ancient Nutrition",
+        "slug": "ancient-nutrition",
+        "portfolio": "consumer",
+        "sector": "wellness",
+        "status": "realized",
+        "description": "Superfood supplement brand specializing in bone broth protein, collagen, and regenerative agriculture.",
+        "website": "https://www.ancientnutrition.com",
+        "domain": "ancientnutrition.com",
+        "logo_url": "https://logo.clearbit.com/ancientnutrition.com",
+        "founded_year": 2016,
+        "leaders": [
+            {"name": "Jordan Rubin", "title": "Co-Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/jordan-rubin"},
+        ],
+    },
+    {
+        "name": "Goli Nutrition",
+        "slug": "goli",
+        "portfolio": "consumer",
+        "sector": "wellness",
+        "status": "realized",
+        "description": "Supplement brand that created the world's first apple cider vinegar gummy vitamin.",
+        "website": "https://www.goli.com",
+        "domain": "goli.com",
+        "logo_url": "https://logo.clearbit.com/goli.com",
+        "founded_year": 2018,
+        "leaders": [
+            {"name": "Michael Bitensky", "title": "Founder", "linkedin_url": "https://www.linkedin.com/in/michaelbitensky"},
+        ],
+    },
+    {
+        "name": "ETS Performance",
+        "slug": "ets-performance",
+        "portfolio": "consumer",
+        "sector": "wellness",
+        "status": "active",
+        "description": "Elite athletic performance training company with 30+ facilities producing college and pro athletes.",
+        "website": "https://www.etsperformance.com",
+        "domain": "etsperformance.com",
+        "logo_url": "https://logo.clearbit.com/etsperformance.com",
+        "founded_year": 2010,
+        "investment_year": 2023,
+        "leaders": [
+            {"name": "Ryan Englebert", "title": "Founder & President", "linkedin_url": "https://www.linkedin.com/in/ryanenglebert"},
+        ],
+    },
+    {
+        "name": "Vega",
+        "slug": "vega",
+        "portfolio": "consumer",
+        "sector": "wellness",
+        "status": "realized",
+        "description": "Plant-based nutrition brand offering protein powders and supplements, co-founded by a pro triathlete.",
+        "website": "https://www.myvega.com",
+        "domain": "myvega.com",
+        "logo_url": "https://logo.clearbit.com/myvega.com",
+        "founded_year": 2004,
+        "acquirer": "Danone",
+        "leaders": [
+            {"name": "Brendan Brazier", "title": "Co-Founder", "linkedin_url": "https://www.linkedin.com/in/brendan-brazier-9508921b"},
+        ],
+    },
+
+    # ── Consumer — Pet ──
+    {
+        "name": "Maev",
+        "slug": "maev",
+        "portfolio": "consumer",
+        "sector": "pet",
+        "status": "active",
+        "description": "Human-grade raw dog food brand delivering flash-frozen, whole-ingredient meals.",
+        "website": "https://www.meetmaev.com",
+        "domain": "meetmaev.com",
+        "logo_url": "https://logo.clearbit.com/meetmaev.com",
+        "founded_year": 2019,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Katie Spies", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/katie-spies"},
+        ],
+    },
+    {
+        "name": "Scenthound",
+        "slug": "scenthound",
+        "portfolio": "consumer",
+        "sector": "pet",
+        "status": "active",
+        "description": "Membership-based dog wellness franchise providing routine hygiene and preventative care.",
+        "website": "https://www.scenthound.com",
+        "domain": "scenthound.com",
+        "logo_url": "https://logo.clearbit.com/scenthound.com",
+        "founded_year": 2015,
+        "investment_year": 2022,
+        "leaders": [
+            {"name": "Tim Vogel", "title": "Founder & CEO", "linkedin_url": "https://www.linkedin.com/in/timvogel"},
+        ],
+    },
+    {
+        "name": "Natural Balance",
+        "slug": "natural-balance",
+        "portfolio": "consumer",
+        "sector": "pet",
+        "status": "realized",
+        "description": "Premium natural pet food brand offering limited ingredient diets for dogs and cats.",
+        "website": "https://www.naturalbalanceinc.com",
+        "domain": "naturalbalanceinc.com",
+        "logo_url": "https://logo.clearbit.com/naturalbalanceinc.com",
+        "founded_year": 1989,
+        "leaders": [],
+    },
+    {
+        "name": "Solid Gold",
+        "slug": "solid-gold",
+        "portfolio": "consumer",
+        "sector": "pet",
+        "status": "realized",
+        "description": "America's first holistic pet food brand, pioneering natural dog and cat nutrition since 1974.",
+        "website": "https://www.solidgoldpet.com",
+        "domain": "solidgoldpet.com",
+        "logo_url": "https://logo.clearbit.com/solidgoldpet.com",
+        "founded_year": 1974,
+        "leaders": [],
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# Seed logic
+# ---------------------------------------------------------------------------
+
+SECTOR_MAP = {v.value: v for v in Sector}
+PORTFOLIO_MAP = {v.value: v for v in Portfolio}
+STATUS_MAP = {v.value: v for v in CompanyStatus}
+
+
+def seed():
+    Base.metadata.create_all(bind=engine)
+
+    db: Session = SessionLocal()
+    created = 0
+    skipped = 0
+
+    try:
+        for data in COMPANIES:
+            existing = db.query(Company).filter(Company.slug == data["slug"]).first()
+            if existing:
+                skipped += 1
+                continue
+
+            leaders_data = data.pop("leaders")
+
+            # Convert string enum values to enum instances
+            data["portfolio"] = PORTFOLIO_MAP[data["portfolio"]]
+            data["sector"] = SECTOR_MAP[data["sector"]]
+            data["status"] = STATUS_MAP[data["status"]]
+
+            company = Company(**data)
+            db.add(company)
+            db.flush()
+
+            for ld in leaders_data:
+                leader = Leader(company_id=company.id, **ld)
+                db.add(leader)
+
+            created += 1
+
+        db.commit()
+        print(f"Seed complete: {created} companies created, {skipped} skipped (already exist).")
+        print(f"Total in database: {db.query(Company).count()} companies, {db.query(Leader).count()} leaders.")
+    except Exception as e:
+        db.rollback()
+        print(f"Seed failed: {e}")
+        raise
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    seed()
