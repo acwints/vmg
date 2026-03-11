@@ -1,11 +1,17 @@
 "use client";
 
 import type { ElementType } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFundOverview } from "@/hooks/use-api";
 import { useSidebar } from "@/context/sidebar-context";
 import { cn } from "@/lib/utils";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Building2,
   Compass,
+  ChevronRight,
   Kanban,
   Landmark,
   LayoutDashboard,
@@ -77,57 +84,91 @@ function SidebarIconLink({
 function SidebarSection({
   pathname,
   group,
+  open,
+  onOpenChange,
 }: {
   pathname: string;
   group: NavGroup;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const active = isPathActive(pathname, group.href);
   const IconComponent = group.icon;
 
   return (
-    <div className="space-y-1.5">
-      <Link
-        href={group.href}
-        className={cn(
-          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-          active
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:bg-accent hover:text-foreground"
-        )}
-      >
-        <IconComponent className="h-4 w-4 shrink-0" />
-        <span className="flex-1">{group.label}</span>
-      </Link>
+    <Collapsible open={open} onOpenChange={onOpenChange}>
+      <div className="space-y-1.5">
+        <div
+          className={cn(
+            "flex items-center gap-1 rounded-lg px-1 py-1",
+            active && "bg-primary text-primary-foreground shadow-sm"
+          )}
+        >
+          <Link
+            href={group.href}
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-medium transition-all duration-200",
+              active
+                ? "text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+          >
+            <IconComponent className="h-4 w-4 shrink-0" />
+            <span className="flex-1 truncate">{group.label}</span>
+          </Link>
 
-      {group.children?.length ? (
-        <div className="ml-5 space-y-1 border-l border-border/70 pl-3">
-          {group.children.map((child) => {
-            const childActive = isPathActive(pathname, child.href);
-
-            return (
-              <Link
-                key={child.href}
-                href={child.href}
+          {group.children?.length ? (
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
                 className={cn(
-                  "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                  childActive
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+                  "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+                  active
+                    ? "text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
+                aria-label={open ? `Collapse ${group.label}` : `Expand ${group.label}`}
               >
-                <span
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full",
-                    childActive ? "bg-foreground" : "bg-muted-foreground/50"
-                  )}
+                <ChevronRight
+                  className={cn("h-4 w-4 transition-transform", open && "rotate-90")}
                 />
-                <span className="truncate">{child.label}</span>
-              </Link>
-            );
-          })}
+              </button>
+            </CollapsibleTrigger>
+          ) : null}
         </div>
-      ) : null}
-    </div>
+
+        {group.children?.length ? (
+          <CollapsibleContent className="space-y-1.5">
+            <div className="ml-5 space-y-1 border-l border-border/70 pl-3">
+              {group.children.map((child) => {
+                const childActive = isPathActive(pathname, child.href);
+
+                return (
+                  <Link
+                    key={child.href}
+                    href={child.href}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                      childActive
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        childActive ? "bg-foreground" : "bg-muted-foreground/50"
+                      )}
+                    />
+                    <span className="truncate">{child.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </CollapsibleContent>
+        ) : null}
+      </div>
+    </Collapsible>
   );
 }
 
@@ -135,6 +176,12 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
   const { overview } = useFundOverview();
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    "/dashboard/portfolio": false,
+    "/dashboard/pipeline": false,
+    "/dashboard/fund": false,
+    "/dashboard/industry": false,
+  });
 
   const fundChildren =
     overview?.funds.map((fund) => ({
@@ -247,7 +294,15 @@ export function AppSidebar() {
 
               <div className="space-y-4">
                 {navGroups.map((group) => (
-                  <SidebarSection key={group.href} pathname={pathname} group={group} />
+                  <SidebarSection
+                    key={group.href}
+                    pathname={pathname}
+                    group={group}
+                    open={openGroups[group.href] ?? false}
+                    onOpenChange={(open) =>
+                      setOpenGroups((current) => ({ ...current, [group.href]: open }))
+                    }
+                  />
                 ))}
               </div>
             </div>
