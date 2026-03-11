@@ -77,7 +77,7 @@ FUNDS = [
         "slug": "vmg-iv",
         "strategy": FundStrategy.consumer,
         "vintage_year": 2017,
-        "committed_capital": 700_000_000,
+        "committed_capital": 750_000_000,
         "status": FundStatus.harvesting,
     },
     {
