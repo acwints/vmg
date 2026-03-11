@@ -212,7 +212,6 @@ export function AppSidebar() {
         { label: "Consumer", href: "/dashboard/pipeline/consumer" },
         { label: "Technology", href: "/dashboard/pipeline/technology" },
       ],
-      description: "Memos capture the narrative on closed-won deals so the story lives with the investment.",
     },
     {
       label: "Fund",
@@ -228,7 +227,6 @@ export function AppSidebar() {
         { label: "Consumer", href: "/dashboard/industry/consumer" },
         { label: "Technology", href: "/dashboard/industry/technology" },
       ],
-      description: "Macro narratives and thematic context for every thesis are curated here.",
     },
   ];
 
