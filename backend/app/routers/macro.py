@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from app.config import settings
 from app.database import get_db
 from app.models import FundingRound, Company
+from app.reference_date import REFERENCE_DATE_LABEL, REFERENCE_DAY, years_before_reference
 
 router = APIRouter()
 
@@ -21,7 +22,7 @@ INDICATORS = [
     {"name": "Consumer Spending (PCE YoY)", "series_id": "PCE", "unit": "% change", "category": "inflation"},
 ]
 
-# Realistic hardcoded fallback data as of early 2026
+# Realistic hardcoded fallback data as of March 11, 2026
 FALLBACK_VALUES = {
     "FEDFUNDS": {"value": 3.75, "previous_value": 4.00, "last_updated": "2026-02-01"},
     "DGS10": {"value": 4.12, "previous_value": 4.25, "last_updated": "2026-03-07"},
@@ -115,7 +116,7 @@ async def get_series(series_id: str):
             f"https://api.stlouisfed.org/fred/series/observations"
             f"?series_id={series_id}&api_key={settings.fred_api_key}"
             f"&file_type=json&sort_order=asc&frequency=m"
-            f"&observation_start={(datetime.utcnow() - timedelta(days=5*365)).strftime('%Y-%m-%d')}"
+            f"&observation_start={years_before_reference(5).strftime('%Y-%m-%d')}"
         )
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
@@ -188,7 +189,11 @@ def _generate_fallback_series(series_id: str) -> list[dict]:
 @router.get("/funding")
 async def get_funding_rounds(company_id: str | None = None, db: Session = Depends(get_db)):
     """Return funding rounds, optionally filtered by company_id."""
-    query = db.query(FundingRound).join(Company, FundingRound.company_id == Company.id)
+    query = (
+        db.query(FundingRound)
+        .join(Company, FundingRound.company_id == Company.id)
+        .filter(FundingRound.date <= REFERENCE_DAY)
+    )
     if company_id:
         query = query.filter(FundingRound.company_id == company_id)
     rounds = query.order_by(FundingRound.date.asc()).all()
@@ -208,4 +213,9 @@ async def get_funding_rounds(company_id: str | None = None, db: Session = Depend
             "source": r.source,
         })
 
-    return {"funding_rounds": results, "total": len(results)}
+    return {
+        "funding_rounds": results,
+        "total": len(results),
+        "as_of_date": REFERENCE_DAY.isoformat(),
+        "as_of_label": REFERENCE_DATE_LABEL,
+    }

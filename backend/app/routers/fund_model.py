@@ -5,6 +5,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import Fund, Investment, FundSnapshot, Company
 from app import schemas
+from app.reference_date import REFERENCE_DATE
 
 router = APIRouter()
 
@@ -239,7 +240,7 @@ def get_deployment_model(fund_slug: str, db: Session = Depends(get_db)):
     reserved = snap.reserved_capital if snap else 0
     dry_powder = snap.dry_powder if snap else fund.committed_capital
 
-    now = datetime(2026, 3, 1)
+    now = REFERENCE_DATE
     fund_close = datetime(fund.vintage_year, 6, 1)
     months_since = max(1, (now.year - fund_close.year) * 12 + (now.month - fund_close.month))
     deployment_pct = invested / fund.committed_capital * 100 if fund.committed_capital else 0

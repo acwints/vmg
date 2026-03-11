@@ -8,6 +8,10 @@ import { StatsCard } from "@/components/shared/stats-card";
 import { CompanyCard } from "@/components/shared/company-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  isOnOrBeforeReferenceDate,
+  isWithinReferenceWindow,
+} from "@/lib/reference-date";
 import { ArrowLeft, Building2, Loader2, RadioTower, Sparkles, Target } from "lucide-react";
 import type { Portfolio, Sector } from "@/types";
 
@@ -77,13 +81,16 @@ export function IndustryStrategyPage({ strategy }: { strategy: Portfolio }) {
   const filteredRounds = useMemo(
     () =>
       rounds
+        .filter((round) => isOnOrBeforeReferenceDate(round.date))
         .filter((round) => companyIds.has(round.companyId))
         .sort((a, b) => +new Date(b.date) - +new Date(a.date)),
     [companyIds, rounds]
   );
 
   const activeCompanies = companies.filter((company) => company.status === "active").length;
-  const recentRounds = filteredRounds.slice(0, 5);
+  const recentRounds = filteredRounds
+    .filter((round) => isWithinReferenceWindow(round.date, 365))
+    .slice(0, 5);
   const totalRecentCapital = recentRounds.reduce((sum, round) => sum + round.amount, 0);
 
   if (companiesLoading || roundsLoading) {
@@ -169,7 +176,7 @@ export function IndustryStrategyPage({ strategy }: { strategy: Portfolio }) {
                 Financing signals
               </h3>
               <p className="text-sm text-muted-foreground">
-                Recent rounds attached to tracked companies in this strategy.
+                Funding rounds from the last 12 months as of March 11, 2026.
               </p>
             </div>
 

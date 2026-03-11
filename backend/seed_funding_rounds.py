@@ -10,6 +10,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.database import engine, SessionLocal, Base
 from app.models import Company, FundingRound
+from app.reference_date import REFERENCE_DAY, clamp_date_to_reference
 
 
 def hash_str(s, salt=0):
@@ -75,7 +76,7 @@ def seed():
             inv_year = company.investment_year or founded + 2
 
             # Determine how many rounds (2-5 based on company age and status)
-            age = 2026 - founded
+            age = REFERENCE_DAY.year - founded
             if company.status.value == "realized":
                 num_rounds = min(in_range(name, 200, 3, 5), len(ROUND_PROGRESSION))
             else:
@@ -96,9 +97,12 @@ def seed():
                 # Round date: spread from founded year
                 round_year = founded + i + in_range(name, 220 + i, 0, 1)
                 round_month = in_range(name, 230 + i, 1, 12)
-                if round_year > 2025:
-                    round_year = 2025
-                round_date = datetime(round_year, round_month, 15)
+                if round_year > REFERENCE_DAY.year:
+                    round_year = REFERENCE_DAY.year
+                round_date = datetime.combine(
+                    clamp_date_to_reference(round_year, round_month, 15),
+                    datetime.min.time(),
+                )
 
                 # Lead investor: VMG leads the round matching their investment year
                 if abs(round_year - inv_year) <= 1 and i >= 1:

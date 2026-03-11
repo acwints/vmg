@@ -8,6 +8,10 @@ import { StatsCard } from "@/components/shared/stats-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  isOnOrBeforeReferenceDate,
+  isWithinReferenceWindow,
+} from "@/lib/reference-date";
+import {
   ArrowRight,
   Compass,
   Cpu,
@@ -70,6 +74,8 @@ export default function IndustryPage() {
 
   const totalTrackedCompanies = consumerCompanies.length + technologyCompanies.length;
   const recentRounds = [...rounds]
+    .filter((round) => isOnOrBeforeReferenceDate(round.date))
+    .filter((round) => isWithinReferenceWindow(round.date, 365))
     .sort((a, b) => +new Date(b.date) - +new Date(a.date))
     .slice(0, 5);
   const recentCapital = recentRounds.reduce((sum, round) => sum + round.amount, 0);
@@ -170,7 +176,7 @@ export default function IndustryPage() {
               Macro context
             </h3>
             <p className="text-sm text-muted-foreground">
-              Portfolio-level market framing belongs under Industry, not on the main dashboard.
+              Portfolio-level market framing as of March 11, 2026.
             </p>
           </div>
 
@@ -199,7 +205,7 @@ export default function IndustryPage() {
             <div className="flex items-center justify-between gap-3">
               <h4 className="text-sm font-semibold text-foreground">Recent rounds</h4>
               <span className="text-xs text-muted-foreground">
-                {fmtUSD(recentCapital)} across latest activity
+                {fmtUSD(recentCapital)} across the last 12 months
               </span>
             </div>
 

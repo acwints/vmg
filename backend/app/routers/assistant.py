@@ -4,6 +4,7 @@ from sqlalchemy import func as sqlfunc
 from datetime import datetime
 from app.database import get_db
 from app.models import Company, Fund, Investment, FundSnapshot, FundingRound
+from app.reference_date import REFERENCE_DATE, REFERENCE_DATE_LABEL, REFERENCE_DAY
 
 router = APIRouter()
 
@@ -104,12 +105,17 @@ async def get_assistant_context(db: Session = Depends(get_db)):
         else:
             macro_lines.append(f"{ind['name']}: {value}{ind['unit']}")
 
-    macro_context = "Key economic indicators (early 2026): " + "; ".join(macro_lines) + "."
+    macro_context = (
+        f"Key economic indicators (as of {REFERENCE_DATE_LABEL}): "
+        + "; ".join(macro_lines)
+        + "."
+    )
 
     # ── Funding Data ──
     recent_rounds = (
         db.query(FundingRound)
         .join(Company, FundingRound.company_id == Company.id)
+        .filter(FundingRound.date <= REFERENCE_DAY)
         .order_by(FundingRound.date.desc())
         .limit(20)
         .all()
@@ -158,5 +164,5 @@ async def get_assistant_context(db: Session = Depends(get_db)):
         "macro_context": macro_context,
         "funding_data": funding_data,
         "top_holdings": top_holdings,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": REFERENCE_DATE.isoformat(),
     }
