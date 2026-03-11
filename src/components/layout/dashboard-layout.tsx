@@ -11,9 +11,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AssistantProvider>
-        <div className="flex min-h-screen flex-col bg-background">
+        <div className="flex h-screen flex-col bg-background">
           <AppHeader />
-          <div className="flex flex-1 min-h-0 overflow-hidden">
+          <div className="flex flex-1 min-h-0">
             <AppSidebar />
             <div className="flex-1 overflow-y-auto min-h-0 p-6">
               {children}
