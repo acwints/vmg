@@ -240,7 +240,7 @@ function CompanyTile({ company }: { company: PortfolioCompany }) {
     <Link
       href={`${basePath}/${company.slug}`}
       className={cn(
-        "group relative flex items-center gap-2 rounded-md border px-2.5 py-2 transition-all duration-150",
+        "group relative flex items-center gap-2 rounded-md border px-2.5 py-1.5 min-w-[140px] transition-all duration-150",
         "hover:shadow-sm hover:scale-[1.02]",
         isRealized
           ? "border-border/30 bg-background/40 opacity-60 hover:opacity-90"
@@ -356,7 +356,7 @@ export function PortfolioMarketMap({ companies }: { companies: PortfolioCompany[
               </div>
 
               {/* Company tiles in a flow grid — fixed height for 4 rows, scroll overflow */}
-              <div className="flex flex-wrap gap-1.5 p-2.5 sm:h-[156px] sm:overflow-y-auto">
+              <div className="flex flex-wrap content-start items-start gap-1.5 p-2.5 sm:h-[156px] sm:overflow-y-auto">
                 {group.companies.map((company) => (
                   <CompanyTile key={company.id} company={company} />
                 ))}
