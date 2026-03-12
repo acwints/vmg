@@ -240,7 +240,7 @@ export function AppSidebar() {
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          "flex h-full flex-col border-r border-border bg-card transition-all duration-300",
+          "hidden md:flex h-full flex-col border-r border-border bg-card transition-all duration-300",
           collapsed ? "w-[60px]" : "w-[260px]"
         )}
       >

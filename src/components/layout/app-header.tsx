@@ -13,11 +13,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sun, Moon, Settings, LogOut } from "lucide-react";
+import { Sun, Moon, Settings, LogOut, Menu } from "lucide-react";
+import { useSidebar } from "@/context/sidebar-context";
 
 export function AppHeader() {
   const { data: session } = useSession();
   const { theme, toggleTheme } = useTheme();
+  const { toggleMobile } = useSidebar();
 
   const userInitials =
     session?.user?.name
@@ -28,8 +30,16 @@ export function AppHeader() {
       .slice(0, 2) || "VM";
 
   return (
-    <header className="flex items-center justify-between h-14 px-7 border-b border-border bg-card shrink-0">
-      {/* Left — Logo */}
+    <header className="flex items-center justify-between h-14 px-4 sm:px-7 border-b border-border bg-card shrink-0 overflow-hidden">
+      {/* Left — Mobile menu + Logo */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={toggleMobile}
+          className="flex md:hidden items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          aria-label="Toggle menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
       <Link href="/dashboard" className="flex items-center gap-2.5">
         <Image
           src="/vmg-vector.svg"
@@ -43,9 +53,10 @@ export function AppHeader() {
           alt="VMG Partners"
           width={72}
           height={25}
-          className="dark:invert-0 invert"
+          className="hidden sm:inline dark:invert-0 invert"
         />
       </Link>
+      </div>
 
       {/* Right — Theme + User */}
       <div className="flex items-center gap-2">

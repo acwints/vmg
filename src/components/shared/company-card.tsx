@@ -41,7 +41,7 @@ export function CompanyCard({ company, className }: CompanyCardProps) {
           className
         )}
       >
-        <CardContent className="flex h-full flex-col p-5">
+        <CardContent className="flex h-full flex-col p-3 sm:p-5">
           {/* Header row: logo + name */}
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 shrink-0 rounded-lg border border-border/50 bg-muted/30 flex items-center justify-center overflow-hidden">

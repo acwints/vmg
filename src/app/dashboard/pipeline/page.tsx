@@ -66,7 +66,7 @@ export default function PipelinePage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard title="Total Deals" value={deals.length} icon={Kanban} />
         <StatsCard title="Active" value={activeConsumer.length + activeTechnology.length} icon={Target} />
         <StatsCard title="Closed Won" value={closedDeals.length} icon={CheckCircle2} />

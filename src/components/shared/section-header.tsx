@@ -14,7 +14,7 @@ export function SectionHeader({
   className,
 }: SectionHeaderProps) {
   return (
-    <div className={cn("flex items-end justify-between gap-4", className)}>
+    <div className={cn("flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4", className)}>
       <div className="space-y-1">
         <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground vmg-underline pb-1">
           {title}

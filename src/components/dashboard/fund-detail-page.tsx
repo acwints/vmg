@@ -76,7 +76,7 @@ export function FundDetailPage({ slug }: { slug: string }) {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard title="Committed" value={fmtUSD(fund.committedCapital)} icon={Landmark} />
         <StatsCard
           title="Invested"
@@ -152,7 +152,7 @@ export function FundDetailPage({ slug }: { slug: string }) {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-3 text-sm text-muted-foreground md:grid-cols-4">
+                  <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2 md:grid-cols-4">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.18em]">Entry</p>
                       <p className="mt-1 text-foreground">{fmtDate(investment.investmentDate)}</p>

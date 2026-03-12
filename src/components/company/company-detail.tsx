@@ -88,7 +88,7 @@ export function CompanyDetail({ company, backHref, backLabel }: CompanyDetailPro
           </p>
 
           {/* Metadata row */}
-          <div className="flex items-center gap-5 mt-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-5 mt-3 flex-wrap">
             {company.website && (
               <a
                 href={company.website}

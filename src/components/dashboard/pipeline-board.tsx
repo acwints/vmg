@@ -248,7 +248,7 @@ export function PipelineBoard({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="glass-card">
           <CardContent className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Active Deals</p>
@@ -297,7 +297,7 @@ export function PipelineBoard({
             const StageIcon = stage.icon;
 
             return (
-              <div key={stage.id} className="w-[300px] shrink-0">
+              <div key={stage.id} className="w-[280px] sm:w-[300px] shrink-0">
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center gap-2">
                     <div className={`h-2 w-2 rounded-full ${stage.color}`} />

@@ -91,7 +91,7 @@ export function PortfolioStrategyPage({ strategy }: { strategy: Portfolio }) {
         action={<ViewToggle mode={viewMode} onChange={setViewMode} />}
       />
 
-      <div className="grid grid-cols-3 gap-4 stagger-fade-in">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 stagger-fade-in">
         <StatsCard
           title="Total Companies"
           value={portfolioStats?.totalCompanies ?? 0}

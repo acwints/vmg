@@ -105,7 +105,7 @@ export function IndustryStrategyPage({ strategy }: { strategy: Portfolio }) {
         <SectionHeader title={copy.title} description={copy.description} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard title="Tracked Companies" value={companies.length} icon={Building2} />
         <StatsCard title="Active Footprint" value={activeCompanies} icon={Target} />
         <StatsCard

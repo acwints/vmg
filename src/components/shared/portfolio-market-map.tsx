@@ -334,7 +334,7 @@ export function PortfolioMarketMap({ companies }: { companies: PortfolioCompany[
       </div>
 
       {/* Market map canvas */}
-      <div className="rounded-xl border border-border bg-muted/20 p-3 columns-2 gap-2 space-y-2">
+      <div className="rounded-xl border border-border bg-muted/20 p-3 columns-1 sm:columns-2 gap-2 space-y-2">
         {groups.map((group) => {
           const colors = THEME_COLORS[group.theme] || DEFAULT_COLORS;
           return (
@@ -356,7 +356,7 @@ export function PortfolioMarketMap({ companies }: { companies: PortfolioCompany[
               </div>
 
               {/* Company tiles in a flow grid — fixed height for 4 rows, scroll overflow */}
-              <div className="flex flex-wrap gap-1.5 p-2.5 h-[156px] overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5 p-2.5 sm:h-[156px] sm:overflow-y-auto">
                 {group.companies.map((company) => (
                   <CompanyTile key={company.id} company={company} />
                 ))}

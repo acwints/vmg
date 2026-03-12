@@ -80,7 +80,7 @@ export function AssistantPanel() {
   // Collapsed toggle button
   if (!isOpen) {
     return (
-      <div className="flex flex-col items-center py-4 px-2 border-l border-border bg-card/50">
+      <div className="hidden md:flex flex-col items-center py-4 px-2 border-l border-border bg-card/50">
         <button
           onClick={toggle}
           className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
@@ -102,7 +102,7 @@ export function AssistantPanel() {
   }
 
   return (
-    <div className="flex flex-col w-[380px] border-l border-border bg-card animate-fade-in-right">
+    <div className="flex flex-col w-full sm:w-[380px] border-l border-border bg-card animate-fade-in-right">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export function AssistantPanel() {
               <h3 className="text-sm font-semibold text-foreground mb-1">
                 VMG Copilot
               </h3>
-              <p className="text-xs text-muted-foreground mb-6 max-w-[240px]">
+              <p className="text-xs text-muted-foreground mb-6 max-w-full sm:max-w-[240px]">
                 Ask about portfolio companies, sectors, exits, or get investment insights.
               </p>
 
