@@ -66,17 +66,10 @@ export default function PipelinePage() {
         title="Pipeline"
         description="Strategy-level sourcing and diligence dashboards for current pipeline work"
         action={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2 text-xs">
-              <ExternalLink className="h-3.5 w-3.5" />
-              Connect to Affinity
-            </Button>
-            <span className="text-xs text-muted-foreground">or</span>
-            <Button variant="outline" size="sm" className="gap-2 text-xs">
-              <ExternalLink className="h-3.5 w-3.5" />
-              HubSpot
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" className="gap-2 text-xs">
+            <ExternalLink className="h-3.5 w-3.5" />
+            Connect to Affinity
+          </Button>
         }
       />
 

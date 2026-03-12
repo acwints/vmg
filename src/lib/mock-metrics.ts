@@ -85,6 +85,19 @@ export function stripeMetrics(name: string) {
   };
 }
 
+// --- HubSpot ---
+export function hubspotMetrics(name: string) {
+  const stages = ["Discovery", "Qualification", "Demo", "Proposal", "Negotiation"];
+  return {
+    dealsInPipeline: range(name, 70, 12, 85),
+    pipelineValue: formatUSD(range(name, 71, 500, 8500) * 1000),
+    avgDealSize: formatUSD(range(name, 72, 15, 120) * 1000),
+    winRate: pct(name, 73, 18, 42) + "%",
+    avgSalesCycle: range(name, 74, 28, 90) + " days",
+    topStage: stages[seeded(name, 75) % stages.length],
+  };
+}
+
 // --- Triple Whale ---
 export function tripleWhaleMetrics(name: string) {
   const blendedRoas = decimal(name, 60, 2.5, 6.8);

@@ -14,6 +14,7 @@ import {
   netsuiteMetrics,
   tripleWhaleMetrics,
   stripeMetrics,
+  hubspotMetrics,
   socialMetrics,
 } from "@/lib/mock-metrics";
 import type { PortfolioCompany } from "@/types";
@@ -118,6 +119,7 @@ export function CompanyDetail({ company, backHref, backLabel }: CompanyDetailPro
   const netsuite = isConsumer ? netsuiteMetrics(company.name) : null;
   const tripleWhale = isConsumer ? tripleWhaleMetrics(company.name) : null;
   const stripe = !isConsumer ? stripeMetrics(company.name) : null;
+  const hubspot = !isConsumer ? hubspotMetrics(company.name) : null;
   const socials = socialMetrics(company.name, isConsumer);
 
   return (
@@ -313,6 +315,22 @@ export function CompanyDetail({ company, backHref, backLabel }: CompanyDetailPro
               <MetricRow label="Churn Rate" value={stripe.churnRate} />
               <MetricRow label="ARPU" value={stripe.arpu} />
               <MetricRow label="Net Revenue Retention" value={stripe.nrr} />
+            </IntegrationCard>
+          )}
+
+          {/* Technology: HubSpot */}
+          {hubspot && (
+            <IntegrationCard
+              logo="https://www.google.com/s2/favicons?domain=hubspot.com&sz=128"
+              name="HubSpot"
+              status="Connected"
+            >
+              <MetricRow label="Deals in Pipeline" value={String(hubspot.dealsInPipeline)} accent />
+              <MetricRow label="Pipeline Value" value={hubspot.pipelineValue} accent />
+              <MetricRow label="Avg Deal Size" value={hubspot.avgDealSize} />
+              <MetricRow label="Win Rate" value={hubspot.winRate} />
+              <MetricRow label="Avg Sales Cycle" value={hubspot.avgSalesCycle} />
+              <MetricRow label="Top Stage" value={hubspot.topStage} />
             </IntegrationCard>
           )}
         </div>
