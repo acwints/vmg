@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { StatsCard } from "@/components/shared/stats-card";
 import { SectionHeader } from "@/components/shared/section-header";
 import { CompanyCard } from "@/components/shared/company-card";
+import { PortfolioMarketMap } from "@/components/shared/portfolio-market-map";
+import { ViewToggle, type ViewMode } from "@/components/shared/view-toggle";
 import { Badge } from "@/components/ui/badge";
 import { useCompanies, useStats } from "@/hooks/use-api";
 import { Building2, Loader2, Target } from "lucide-react";
 
 export default function PortfolioConsumerPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const { companies, loading: companiesLoading, error: companiesError } = useCompanies({
     portfolio: "consumer",
   });
@@ -44,6 +48,7 @@ export default function PortfolioConsumerPage() {
       <SectionHeader
         title="Consumer Portfolio"
         description="Championing brands that anchor modern life"
+        action={<ViewToggle mode={viewMode} onChange={setViewMode} />}
       />
 
       <div className="grid grid-cols-3 gap-4 stagger-fade-in">
@@ -74,11 +79,15 @@ export default function PortfolioConsumerPage() {
         <Badge variant="pet">{petCount} Pet</Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-fade-in">
-        {companies.map((company) => (
-          <CompanyCard key={company.id} company={company} />
-        ))}
-      </div>
+      {viewMode === "cards" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-fade-in">
+          {companies.map((company) => (
+            <CompanyCard key={company.id} company={company} />
+          ))}
+        </div>
+      ) : (
+        <PortfolioMarketMap companies={companies} />
+      )}
     </div>
   );
 }
