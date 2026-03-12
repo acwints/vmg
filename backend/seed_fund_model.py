@@ -52,24 +52,24 @@ FUNDS = [
         "name": "VMG Partners I",
         "slug": "vmg-i",
         "strategy": FundStrategy.consumer,
-        "vintage_year": 2007,
-        "committed_capital": 175_000_000,
+        "vintage_year": 2006,
+        "committed_capital": 325_000_000,
         "status": FundStatus.closed,
     },
     {
         "name": "VMG Partners II",
         "slug": "vmg-ii",
         "strategy": FundStrategy.consumer,
-        "vintage_year": 2010,
-        "committed_capital": 375_000_000,
+        "vintage_year": 2011,
+        "committed_capital": 382_000_000,
         "status": FundStatus.closed,
     },
     {
         "name": "VMG Partners III",
         "slug": "vmg-iii",
         "strategy": FundStrategy.consumer,
-        "vintage_year": 2014,
-        "committed_capital": 550_000_000,
+        "vintage_year": 2015,
+        "committed_capital": 500_000_000,
         "status": FundStatus.closed,
     },
     {
@@ -77,22 +77,22 @@ FUNDS = [
         "slug": "vmg-iv",
         "strategy": FundStrategy.consumer,
         "vintage_year": 2017,
-        "committed_capital": 750_000_000,
-        "status": FundStatus.harvesting,
+        "committed_capital": 672_000_000,
+        "status": FundStatus.closed,
     },
     {
         "name": "VMG Partners V",
         "slug": "vmg-v",
         "strategy": FundStrategy.consumer,
         "vintage_year": 2021,
-        "committed_capital": 850_000_000,
-        "status": FundStatus.active,
+        "committed_capital": 871_200_000,
+        "status": FundStatus.closed,
     },
     {
         "name": "VMG Partners VI",
         "slug": "vmg-vi",
         "strategy": FundStrategy.consumer,
-        "vintage_year": 2025,
+        "vintage_year": 2024,
         "committed_capital": 1_000_000_000,
         "status": FundStatus.active,
     },
@@ -100,9 +100,9 @@ FUNDS = [
         "name": "VMG Catalyst I",
         "slug": "catalyst-i",
         "strategy": FundStrategy.technology,
-        "vintage_year": 2019,
+        "vintage_year": 2021,
         "committed_capital": 250_000_000,
-        "status": FundStatus.harvesting,
+        "status": FundStatus.closed,
     },
     {
         "name": "VMG Catalyst II",
@@ -123,11 +123,11 @@ FUNDS = [
 FUND_BY_SLUG = {}
 
 CONSUMER_FUND_RANGES = [
-    (2009, "vmg-i"),
-    (2013, "vmg-ii"),
+    (2010, "vmg-i"),
+    (2014, "vmg-ii"),
     (2016, "vmg-iii"),
     (2020, "vmg-iv"),
-    (2024, "vmg-v"),
+    (2023, "vmg-v"),
     (9999, "vmg-vi"),
 ]
 
@@ -179,17 +179,28 @@ def seed():
 
     db: Session = SessionLocal()
     funds_created = 0
+    funds_updated = 0
     funds_skipped = 0
     investments_created = 0
     snapshots_created = 0
 
+    FUND_UPDATABLE = ["name", "strategy", "vintage_year", "committed_capital", "status"]
+
     try:
-        # ── 1. Create Funds ──
+        # ── 1. Create or Update Funds ──
         for fdata in FUNDS:
             existing = db.query(Fund).filter(Fund.slug == fdata["slug"]).first()
             if existing:
+                changed = False
+                for field in FUND_UPDATABLE:
+                    if field in fdata and getattr(existing, field) != fdata[field]:
+                        setattr(existing, field, fdata[field])
+                        changed = True
                 FUND_BY_SLUG[fdata["slug"]] = existing
-                funds_skipped += 1
+                if changed:
+                    funds_updated += 1
+                else:
+                    funds_skipped += 1
                 continue
 
             fund = Fund(
@@ -428,7 +439,7 @@ def seed():
         db.commit()
 
         print(f"Seed complete:")
-        print(f"  Funds:       {funds_created} created, {funds_skipped} skipped")
+        print(f"  Funds:       {funds_created} created, {funds_updated} updated, {funds_skipped} unchanged")
         print(f"  Investments: {investments_created} created")
         print(f"  Snapshots:   {snapshots_created} created")
         print(f"  Totals: {db.query(Fund).count()} funds, "
