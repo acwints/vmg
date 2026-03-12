@@ -37,6 +37,7 @@ type Icon = ElementType;
 interface NavChild {
   label: string;
   href: string;
+  isActive?: boolean;
 }
 
 interface NavGroup {
@@ -157,7 +158,11 @@ function SidebarSection({
                     <span
                       className={cn(
                         "h-1.5 w-1.5 rounded-full",
-                        childActive ? "bg-foreground" : "bg-muted-foreground/50"
+                        child.isActive
+                          ? "bg-emerald-500"
+                          : childActive
+                            ? "bg-foreground"
+                            : "bg-muted-foreground/50"
                       )}
                     />
                     <span className="truncate">{child.label}</span>
@@ -192,6 +197,7 @@ export function AppSidebar() {
     overview ? sortFunds(overview.funds).map((fund) => ({
       label: fund.name,
       href: `/dashboard/fund/${fund.slug}`,
+      isActive: fund.status === "active",
     })) : [];
 
   const navGroups: NavGroup[] = [
@@ -214,7 +220,7 @@ export function AppSidebar() {
       ],
     },
     {
-      label: "Fund",
+      label: "Funds",
       href: "/dashboard/fund",
       icon: Landmark,
       children: fundChildren,
