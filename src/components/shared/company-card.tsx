@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
+import { SECTOR_BADGE_VARIANT, SECTOR_LABELS_SHORT } from "@/lib/constants";
 import type { PortfolioCompany } from "@/types";
 
 interface CompanyCardProps {
@@ -13,23 +14,8 @@ interface CompanyCardProps {
   className?: string;
 }
 
-const sectorBadgeVariant: Record<string, "beauty" | "food-bev" | "wellness" | "pet" | "tech"> = {
-  beauty: "beauty",
-  "food-bev": "food-bev",
-  wellness: "wellness",
-  pet: "pet",
-  software: "tech",
-  marketplace: "tech",
-};
-
-const sectorLabels: Record<string, string> = {
-  beauty: "Beauty",
-  "food-bev": "Food & Bev",
-  wellness: "Wellness",
-  pet: "Pet",
-  software: "Software",
-  marketplace: "Marketplace",
-};
+const sectorBadgeVariant = SECTOR_BADGE_VARIANT;
+const sectorLabels = SECTOR_LABELS_SHORT;
 
 export function CompanyCard({ company, className }: CompanyCardProps) {
   const initials = company.name

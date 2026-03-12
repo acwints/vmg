@@ -1,33 +1,13 @@
 "use client";
 
 import { useFundingRounds } from "@/hooks/use-api";
+import { fmtUSDPrecise as fmtUSD, fmtDateShort as fmtDate } from "@/lib/formatters";
+import { ROUND_COLORS } from "@/lib/theme-colors";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, DollarSign, TrendingUp, Users, Database } from "lucide-react";
 
-function fmtUSD(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  if (abs >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
-
-function fmtDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-}
-
-const roundColors: Record<string, string> = {
-  "Seed": "bg-emerald-500",
-  "Series A": "bg-blue-500",
-  "Series B": "bg-violet-500",
-  "Series C": "bg-amber-500",
-  "Series D": "bg-rose-500",
-  "Series E": "bg-pink-500",
-  "Growth": "bg-indigo-500",
-  "Strategic": "bg-cyan-500",
-};
+const roundColors = ROUND_COLORS;
 
 interface FundingTimelineProps {
   companyId: string;

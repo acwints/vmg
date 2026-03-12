@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from datetime import datetime
 from app.database import get_db
 from app.models import PipelineDeal
 
@@ -151,10 +152,8 @@ def update_deal_stage(deal_id: str, stage: str, db: Session = Depends(get_db)):
     """Update a deal's stage (for kanban drag-and-drop)."""
     deal = db.query(PipelineDeal).filter(PipelineDeal.id == deal_id).first()
     if not deal:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Deal not found")
     deal.stage = stage
-    from datetime import datetime
     deal.last_activity = datetime.utcnow()
     db.commit()
     return {"status": "updated", "deal_id": deal_id, "new_stage": stage}

@@ -1,10 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import Memo, MemoCompany, Company
 from app.schemas import MemoCreate, MemoResponse, MemoListResponse, CompanyResponse
 
 router = APIRouter()
+
+
+def build_memo_response(memo, companies):
+    """Build a MemoResponse from a Memo and its associated Company list."""
+    return MemoResponse(
+        id=memo.id,
+        title=memo.title,
+        content=memo.content,
+        status=memo.status,
+        author=memo.author,
+        created_at=memo.created_at,
+        updated_at=memo.updated_at,
+        companies=[CompanyResponse.model_validate(c) for c in companies],
+    )
 
 
 @router.get("", response_model=MemoListResponse)
@@ -19,48 +33,35 @@ def list_memos(
         query = query.filter(Memo.status == status)
 
     total = query.count()
-    memos = query.order_by(Memo.updated_at.desc()).offset(skip).limit(limit).all()
+    memos = (
+        query.options(joinedload(Memo.memo_companies).joinedload(MemoCompany.company))
+        .order_by(Memo.updated_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
     results = []
     for memo in memos:
-        mc_rows = db.query(MemoCompany).filter(MemoCompany.memo_id == memo.id).all()
-        company_ids = [mc.company_id for mc in mc_rows]
-        companies = db.query(Company).filter(Company.id.in_(company_ids)).all() if company_ids else []
-        memo_resp = MemoResponse(
-            id=memo.id,
-            title=memo.title,
-            content=memo.content,
-            status=memo.status,
-            author=memo.author,
-            created_at=memo.created_at,
-            updated_at=memo.updated_at,
-            companies=[CompanyResponse.model_validate(c) for c in companies],
-        )
-        results.append(memo_resp)
+        companies = [mc.company for mc in memo.memo_companies]
+        results.append(build_memo_response(memo, companies))
 
     return MemoListResponse(memos=results, total=total)
 
 
 @router.get("/{memo_id}", response_model=MemoResponse)
 def get_memo(memo_id: str, db: Session = Depends(get_db)):
-    memo = db.query(Memo).filter(Memo.id == memo_id).first()
+    memo = (
+        db.query(Memo)
+        .options(joinedload(Memo.memo_companies).joinedload(MemoCompany.company))
+        .filter(Memo.id == memo_id)
+        .first()
+    )
     if not memo:
         raise HTTPException(status_code=404, detail="Memo not found")
 
-    mc_rows = db.query(MemoCompany).filter(MemoCompany.memo_id == memo.id).all()
-    company_ids = [mc.company_id for mc in mc_rows]
-    companies = db.query(Company).filter(Company.id.in_(company_ids)).all() if company_ids else []
-
-    return MemoResponse(
-        id=memo.id,
-        title=memo.title,
-        content=memo.content,
-        status=memo.status,
-        author=memo.author,
-        created_at=memo.created_at,
-        updated_at=memo.updated_at,
-        companies=[CompanyResponse.model_validate(c) for c in companies],
-    )
+    companies = [mc.company for mc in memo.memo_companies]
+    return build_memo_response(memo, companies)
 
 
 @router.post("", response_model=MemoResponse, status_code=201)
@@ -81,17 +82,8 @@ def create_memo(data: MemoCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(memo)
 
-    mc_rows = db.query(MemoCompany).filter(MemoCompany.memo_id == memo.id).all()
-    company_ids = [mc.company_id for mc in mc_rows]
-    companies = db.query(Company).filter(Company.id.in_(company_ids)).all() if company_ids else []
-
-    return MemoResponse(
-        id=memo.id,
-        title=memo.title,
-        content=memo.content,
-        status=memo.status,
-        author=memo.author,
-        created_at=memo.created_at,
-        updated_at=memo.updated_at,
-        companies=[CompanyResponse.model_validate(c) for c in companies],
+    companies = (
+        db.query(Company).filter(Company.id.in_(data.company_ids)).all()
+        if data.company_ids else []
     )
+    return build_memo_response(memo, companies)

@@ -169,52 +169,58 @@ export function AssistantPanel() {
               <div
                 key={message.id}
                 className={cn(
-                  "flex gap-2.5",
-                  message.role === "user" ? "flex-row-reverse" : ""
+                  "rounded-lg px-3 py-2 text-sm w-full",
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground"
                 )}
               >
-                {message.role === "assistant" ? (
-                  <div className="shrink-0 h-7 w-7 rounded-full bg-secondary flex items-center justify-center">
-                    <Sparkles className="h-3.5 w-3.5 text-foreground" />
-                  </div>
-                ) : (
-                  <Avatar className="h-7 w-7 shrink-0">
-                    <AvatarImage src={session?.user?.image || undefined} />
-                    <AvatarFallback className="text-[10px] bg-muted">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div
-                  className={cn(
-                    "rounded-lg px-3 py-2 text-sm max-w-[85%]",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
-                  )}
-                >
+                {/* Avatar row — top-left for AI, top-right for user */}
+                <div className={cn(
+                  "flex items-center gap-1.5 mb-1.5",
+                  message.role === "user" ? "justify-end" : "justify-start"
+                )}>
                   {message.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_strong]:text-foreground">
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
-                    </div>
+                    <>
+                      <div className="h-5 w-5 rounded-full bg-background/50 flex items-center justify-center">
+                        <Sparkles className="h-3 w-3 text-foreground" />
+                      </div>
+                      <span className="text-[10px] font-medium opacity-60">Copilot</span>
+                    </>
                   ) : (
-                    <p className="whitespace-pre-wrap leading-relaxed">
-                      {message.content}
-                    </p>
+                    <>
+                      <span className="text-[10px] font-medium opacity-60">You</span>
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage src={session?.user?.image || undefined} />
+                        <AvatarFallback className="text-[8px] bg-background/50">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                    </>
                   )}
                 </div>
+                {message.role === "assistant" ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_strong]:text-foreground">
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap leading-relaxed">
+                    {message.content}
+                  </p>
+                )}
               </div>
             ))
           )}
 
           {isLoading && (
-            <div className="flex gap-2.5">
-              <div className="shrink-0 h-7 w-7 rounded-full bg-secondary flex items-center justify-center">
-                <Sparkles className="h-3.5 w-3.5 text-foreground animate-pulse" />
+            <div className="rounded-lg px-3 py-2 bg-secondary w-full">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="h-5 w-5 rounded-full bg-background/50 flex items-center justify-center">
+                  <Sparkles className="h-3 w-3 text-foreground animate-pulse" />
+                </div>
+                <span className="text-[10px] font-medium opacity-60">Copilot</span>
               </div>
-              <div className="bg-secondary rounded-lg px-3 py-2">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              </div>
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
           )}
 

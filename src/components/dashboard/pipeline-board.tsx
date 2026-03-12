@@ -1,63 +1,30 @@
 "use client";
 
-import type { ElementType } from "react";
 import { useMemo, useState } from "react";
 import { usePipelineDeals } from "@/hooks/use-api";
 import { updateDealStage } from "@/lib/api";
+import { fmtUSD } from "@/lib/formatters";
+import { DEAL_STAGES, SECTOR_COLORS, PRIORITY_CONFIG } from "@/lib/theme-colors";
 import { SectionHeader } from "@/components/shared/section-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Clock,
   DollarSign,
-  Filter,
   GripVertical,
   Loader2,
-  Search,
-  Target,
   TrendingUp,
   User,
-  XCircle,
 } from "lucide-react";
 import type { DealStage, PipelineDeal } from "@/types";
 
-const STAGES: { id: DealStage; label: string; color: string; icon: ElementType }[] = [
-  { id: "screening", label: "Screening", color: "bg-slate-500", icon: Search },
-  { id: "diligence", label: "Diligence", color: "bg-blue-500", icon: Filter },
-  { id: "ic_review", label: "IC Review", color: "bg-amber-500", icon: Target },
-  { id: "term_sheet", label: "Term Sheet", color: "bg-violet-500", icon: ArrowRight },
-  { id: "closed", label: "Closed", color: "bg-emerald-500", icon: CheckCircle2 },
-  { id: "passed", label: "Passed", color: "bg-red-400", icon: XCircle },
-];
-
-const sectorColors: Record<string, string> = {
-  beauty: "text-pink-600 dark:text-pink-400 bg-pink-500/10",
-  "food-bev": "text-orange-600 dark:text-orange-400 bg-orange-500/10",
-  wellness: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10",
-  pet: "text-amber-600 dark:text-amber-400 bg-amber-500/10",
-  software: "text-blue-600 dark:text-blue-400 bg-blue-500/10",
-  marketplace: "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10",
-};
-
-const priorityConfig: Record<string, { color: string; label: string }> = {
-  high: { color: "text-red-600 dark:text-red-400", label: "High" },
-  medium: { color: "text-amber-600 dark:text-amber-400", label: "Med" },
-  low: { color: "text-muted-foreground", label: "Low" },
-};
-
-function fmtUSD(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `$${(n / 1e6).toFixed(0)}M`;
-  if (abs >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
+const STAGES = DEAL_STAGES;
+const sectorColors = SECTOR_COLORS;
+const priorityConfig = PRIORITY_CONFIG;
 
 function timeAgo(dateStr: string): string {
   const date = new Date(dateStr);

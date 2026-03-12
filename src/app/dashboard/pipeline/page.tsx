@@ -8,6 +8,7 @@ import { StatsCard } from "@/components/shared/stats-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { fmtUSD } from "@/lib/formatters";
 import {
   ArrowRight,
   CheckCircle2,
@@ -19,14 +20,6 @@ import {
   Cpu,
   FileText,
 } from "lucide-react";
-
-function fmtUSD(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `$${(n / 1e6).toFixed(0)}M`;
-  if (abs >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
 
 export default function PipelinePage() {
   const { deals, loading, error } = usePipelineDeals();

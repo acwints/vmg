@@ -13,6 +13,8 @@ import {
   isWithinReferenceWindow,
 } from "@/lib/reference-date";
 import { ArrowLeft, Building2, Loader2, RadioTower, Sparkles, Target } from "lucide-react";
+import { fmtUSD, fmtDate } from "@/lib/formatters";
+import { SECTOR_LABELS_STRATEGY } from "@/lib/constants";
 import type { Portfolio, Sector } from "@/types";
 
 const portfolioCopy: Record<
@@ -37,29 +39,7 @@ const portfolioCopy: Record<
   },
 };
 
-const sectorLabels: Record<Sector, string> = {
-  beauty: "Beauty",
-  "food-bev": "Food & Beverage",
-  wellness: "Wellness",
-  pet: "Pet",
-  software: "Software",
-  marketplace: "Marketplace",
-};
-
-function fmtUSD(n: number) {
-  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(0)}M`;
-  if (n >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
-
-function fmtDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+const sectorLabels = SECTOR_LABELS_STRATEGY;
 
 export function IndustryStrategyPage({ strategy }: { strategy: Portfolio }) {
   const copy = portfolioCopy[strategy];

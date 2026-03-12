@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from datetime import datetime
@@ -8,6 +8,50 @@ from app import schemas
 from app.reference_date import REFERENCE_DATE
 
 router = APIRouter()
+
+
+def build_investment_response(inv):
+    """Build an InvestmentResponse from an Investment ORM object (with company loaded)."""
+    return schemas.InvestmentResponse(
+        id=inv.id, fund_id=inv.fund_id, company_id=inv.company_id,
+        company_name=inv.company.name, company_slug=inv.company.slug,
+        company_sector=inv.company.sector.value,
+        investment_date=inv.investment_date, round_type=inv.round_type,
+        invested_capital=inv.invested_capital, entry_valuation=inv.entry_valuation,
+        ownership_pct=inv.ownership_pct, current_valuation=inv.current_valuation,
+        current_moic=inv.current_moic, is_realized=inv.is_realized,
+        exit_date=inv.exit_date, exit_proceeds=inv.exit_proceeds,
+        realized_moic=inv.realized_moic, realized_irr=inv.realized_irr,
+        reserved_capital=inv.reserved_capital,
+        created_at=inv.created_at, updated_at=inv.updated_at,
+    )
+
+
+def build_snapshot_response(snap):
+    """Build a FundSnapshotResponse from a FundSnapshot ORM object."""
+    return schemas.FundSnapshotResponse(
+        fund_id=snap.fund_id, as_of_date=snap.as_of_date,
+        invested_capital=snap.invested_capital, realized_value=snap.realized_value,
+        unrealized_value=snap.unrealized_value, total_value=snap.total_value,
+        dry_powder=snap.dry_powder, reserved_capital=snap.reserved_capital,
+        tvpi=snap.tvpi, dpi=snap.dpi, rvpi=snap.rvpi,
+        gross_irr=snap.gross_irr, net_irr=snap.net_irr,
+        num_investments=snap.num_investments, num_realized=snap.num_realized,
+    )
+
+
+def build_fund_detail(fund, snapshot, investments):
+    """Build a FundDetailResponse from Fund, optional FundSnapshot, and Investment list."""
+    snapshot_resp = build_snapshot_response(snapshot) if snapshot else None
+    inv_responses = [build_investment_response(inv) for inv in investments]
+    return schemas.FundDetailResponse(
+        id=fund.id, name=fund.name, slug=fund.slug, strategy=fund.strategy.value,
+        vintage_year=fund.vintage_year, committed_capital=fund.committed_capital,
+        management_fee_rate=fund.management_fee_rate, carry_rate=fund.carry_rate,
+        status=fund.status.value, created_at=fund.created_at, updated_at=fund.updated_at,
+        snapshot=snapshot_resp, investments=inv_responses,
+    )
+
 
 @router.get("/overview", response_model=schemas.FundOverviewResponse)
 def get_fund_overview(db: Session = Depends(get_db)):
@@ -27,33 +71,10 @@ def get_fund_overview(db: Session = Depends(get_db)):
 
     for f in funds:
         snap = f.snapshots[0] if f.snapshots else None
-        investments = []
-        for inv in f.investments:
-            investments.append(schemas.InvestmentResponse(
-                id=inv.id, fund_id=inv.fund_id, company_id=inv.company_id,
-                company_name=inv.company.name, company_slug=inv.company.slug,
-                company_sector=inv.company.sector.value,
-                investment_date=inv.investment_date, round_type=inv.round_type,
-                invested_capital=inv.invested_capital, entry_valuation=inv.entry_valuation,
-                ownership_pct=inv.ownership_pct, current_valuation=inv.current_valuation,
-                current_moic=inv.current_moic, is_realized=inv.is_realized,
-                exit_date=inv.exit_date, exit_proceeds=inv.exit_proceeds,
-                realized_moic=inv.realized_moic, realized_irr=inv.realized_irr,
-                reserved_capital=inv.reserved_capital,
-                created_at=inv.created_at, updated_at=inv.updated_at,
-            ))
 
-        snapshot_resp = None
+        fund_details.append(build_fund_detail(f, snap, f.investments))
+
         if snap:
-            snapshot_resp = schemas.FundSnapshotResponse(
-                fund_id=snap.fund_id, as_of_date=snap.as_of_date,
-                invested_capital=snap.invested_capital, realized_value=snap.realized_value,
-                unrealized_value=snap.unrealized_value, total_value=snap.total_value,
-                dry_powder=snap.dry_powder, reserved_capital=snap.reserved_capital,
-                tvpi=snap.tvpi, dpi=snap.dpi, rvpi=snap.rvpi,
-                gross_irr=snap.gross_irr, net_irr=snap.net_irr,
-                num_investments=snap.num_investments, num_realized=snap.num_realized,
-            )
             total_invested += snap.invested_capital
             total_dry_powder += snap.dry_powder
             total_realized += snap.realized_value
@@ -62,14 +83,6 @@ def get_fund_overview(db: Session = Depends(get_db)):
             weighted_irr_num += snap.net_irr * snap.invested_capital
 
         total_aum += f.committed_capital
-
-        fund_details.append(schemas.FundDetailResponse(
-            id=f.id, name=f.name, slug=f.slug, strategy=f.strategy.value,
-            vintage_year=f.vintage_year, committed_capital=f.committed_capital,
-            management_fee_rate=f.management_fee_rate, carry_rate=f.carry_rate,
-            status=f.status.value, created_at=f.created_at, updated_at=f.updated_at,
-            snapshot=snapshot_resp, investments=investments,
-        ))
 
     weighted_tvpi = weighted_tvpi_num / total_invested if total_invested > 0 else 0
     weighted_irr = weighted_irr_num / total_invested if total_invested > 0 else 0
@@ -89,45 +102,10 @@ def get_fund_detail(slug: str, db: Session = Depends(get_db)):
         joinedload(Fund.investments).joinedload(Investment.company)
     ).filter(Fund.slug == slug).first()
     if not fund:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Fund not found")
 
     snap = fund.snapshots[0] if fund.snapshots else None
-    investments = []
-    for inv in fund.investments:
-        investments.append(schemas.InvestmentResponse(
-            id=inv.id, fund_id=inv.fund_id, company_id=inv.company_id,
-            company_name=inv.company.name, company_slug=inv.company.slug,
-            company_sector=inv.company.sector.value,
-            investment_date=inv.investment_date, round_type=inv.round_type,
-            invested_capital=inv.invested_capital, entry_valuation=inv.entry_valuation,
-            ownership_pct=inv.ownership_pct, current_valuation=inv.current_valuation,
-            current_moic=inv.current_moic, is_realized=inv.is_realized,
-            exit_date=inv.exit_date, exit_proceeds=inv.exit_proceeds,
-            realized_moic=inv.realized_moic, realized_irr=inv.realized_irr,
-            reserved_capital=inv.reserved_capital,
-            created_at=inv.created_at, updated_at=inv.updated_at,
-        ))
-
-    snapshot_resp = None
-    if snap:
-        snapshot_resp = schemas.FundSnapshotResponse(
-            fund_id=snap.fund_id, as_of_date=snap.as_of_date,
-            invested_capital=snap.invested_capital, realized_value=snap.realized_value,
-            unrealized_value=snap.unrealized_value, total_value=snap.total_value,
-            dry_powder=snap.dry_powder, reserved_capital=snap.reserved_capital,
-            tvpi=snap.tvpi, dpi=snap.dpi, rvpi=snap.rvpi,
-            gross_irr=snap.gross_irr, net_irr=snap.net_irr,
-            num_investments=snap.num_investments, num_realized=snap.num_realized,
-        )
-
-    return schemas.FundDetailResponse(
-        id=fund.id, name=fund.name, slug=fund.slug, strategy=fund.strategy.value,
-        vintage_year=fund.vintage_year, committed_capital=fund.committed_capital,
-        management_fee_rate=fund.management_fee_rate, carry_rate=fund.carry_rate,
-        status=fund.status.value, created_at=fund.created_at, updated_at=fund.updated_at,
-        snapshot=snapshot_resp, investments=investments,
-    )
+    return build_fund_detail(fund, snap, fund.investments)
 
 
 @router.get("/investments", response_model=list[schemas.InvestmentResponse])
@@ -138,21 +116,7 @@ def get_investments(fund_slug: str = None, realized: bool = None, db: Session = 
     if realized is not None:
         q = q.filter(Investment.is_realized == realized)
     investments = q.all()
-    return [
-        schemas.InvestmentResponse(
-            id=inv.id, fund_id=inv.fund_id, company_id=inv.company_id,
-            company_name=inv.company.name, company_slug=inv.company.slug,
-            company_sector=inv.company.sector.value,
-            investment_date=inv.investment_date, round_type=inv.round_type,
-            invested_capital=inv.invested_capital, entry_valuation=inv.entry_valuation,
-            ownership_pct=inv.ownership_pct, current_valuation=inv.current_valuation,
-            current_moic=inv.current_moic, is_realized=inv.is_realized,
-            exit_date=inv.exit_date, exit_proceeds=inv.exit_proceeds,
-            realized_moic=inv.realized_moic, realized_irr=inv.realized_irr,
-            reserved_capital=inv.reserved_capital,
-            created_at=inv.created_at, updated_at=inv.updated_at,
-        ) for inv in investments
-    ]
+    return [build_investment_response(inv) for inv in investments]
 
 
 @router.get("/construction", response_model=schemas.PortfolioConstructionResponse)
@@ -232,7 +196,6 @@ def get_portfolio_construction(db: Session = Depends(get_db)):
 def get_deployment_model(fund_slug: str, db: Session = Depends(get_db)):
     fund = db.query(Fund).options(joinedload(Fund.snapshots)).filter(Fund.slug == fund_slug).first()
     if not fund:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Fund not found")
 
     snap = fund.snapshots[0] if fund.snapshots else None

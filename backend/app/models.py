@@ -105,7 +105,7 @@ class ActivityLog(Base):
     __tablename__ = "activity_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
     event_type = Column(String(100), nullable=False)  # investment, exit, thesis_update, note, milestone
     title = Column(String(500), nullable=False)
     description = Column(Text)
@@ -140,8 +140,8 @@ class Investment(Base):
     __tablename__ = "investments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    fund_id = Column(UUID(as_uuid=True), ForeignKey("funds.id", ondelete="CASCADE"), nullable=False)
-    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    fund_id = Column(UUID(as_uuid=True), ForeignKey("funds.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
     investment_date = Column(DateTime, nullable=False)
     round_type = Column(String(100), nullable=False)
     invested_capital = Column(Float, nullable=False)
@@ -166,7 +166,7 @@ class FundSnapshot(Base):
     __tablename__ = "fund_snapshots"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    fund_id = Column(UUID(as_uuid=True), ForeignKey("funds.id", ondelete="CASCADE"), nullable=False)
+    fund_id = Column(UUID(as_uuid=True), ForeignKey("funds.id", ondelete="CASCADE"), nullable=False, index=True)
     as_of_date = Column(DateTime, nullable=False)
     invested_capital = Column(Float, nullable=False)
     realized_value = Column(Float, nullable=False)
@@ -190,7 +190,7 @@ class FundingRound(Base):
     __tablename__ = "funding_rounds"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"))
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
     round_name = Column(String(100))  # "Series A", "Series B", etc.
     amount = Column(Float)
     date = Column(DateTime)
@@ -198,7 +198,7 @@ class FundingRound(Base):
     investors = Column(String(1000))  # comma-separated
     pre_money_valuation = Column(Float, nullable=True)
     source = Column(String(50), default="internal")  # "crunchbase", "internal", "manual"
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     company = relationship("Company", backref="funding_rounds")
 

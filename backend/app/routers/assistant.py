@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func as sqlfunc
+from collections import defaultdict
 from datetime import datetime
 from app.database import get_db
 from app.models import Company, Fund, Investment, FundSnapshot, FundingRound
@@ -115,14 +116,30 @@ async def get_assistant_context(db: Session = Depends(get_db)):
 
     # ── Fund Performance ──
     funds = db.query(Fund).all()
+
+    # Fetch all latest snapshots in a single query using a subquery for max date per fund
+    latest_date_subq = (
+        db.query(
+            FundSnapshot.fund_id,
+            sqlfunc.max(FundSnapshot.as_of_date).label("max_date"),
+        )
+        .group_by(FundSnapshot.fund_id)
+        .subquery()
+    )
+    latest_snapshots = (
+        db.query(FundSnapshot)
+        .join(
+            latest_date_subq,
+            (FundSnapshot.fund_id == latest_date_subq.c.fund_id)
+            & (FundSnapshot.as_of_date == latest_date_subq.c.max_date),
+        )
+        .all()
+    )
+    snapshot_by_fund = {snap.fund_id: snap for snap in latest_snapshots}
+
     fund_lines = []
     for fund in funds:
-        latest_snapshot = (
-            db.query(FundSnapshot)
-            .filter(FundSnapshot.fund_id == fund.id)
-            .order_by(FundSnapshot.as_of_date.desc())
-            .first()
-        )
+        latest_snapshot = snapshot_by_fund.get(fund.id)
 
         if latest_snapshot:
             deployed_pct = (
