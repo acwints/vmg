@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import companies, memos, activity, stats, fund_model, macro, assistant, pipeline
+from app.routers import companies, memos, activity, stats, fund_model, macro, assistant, pipeline, users
 
 app = FastAPI(
     title="VMG Partners API",
@@ -25,6 +25,7 @@ app.include_router(fund_model.router, prefix="/api/fund-model", tags=["fund-mode
 app.include_router(macro.router, prefix="/api/macro", tags=["macro"])
 app.include_router(assistant.router, prefix="/api/assistant", tags=["assistant"])
 app.include_router(pipeline.router, prefix="/api/pipeline", tags=["pipeline"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 
 
 @app.get("/api/health")

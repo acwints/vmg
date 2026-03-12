@@ -3,14 +3,14 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { nextAuthSecret } from "@/lib/auth-env";
 import {
-  GOOGLE_CALENDAR_SCOPE,
-  GOOGLE_GMAIL_SCOPE,
-  GOOGLE_WORKSPACE_SCOPES,
   googleAllowedDomain,
   googleAllowedEmails,
-  refreshGoogleAccessToken,
-  type GoogleAuthToken,
 } from "@/lib/google-workspace";
+
+const API_BASE =
+  process.env.API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://vmg-backend-production.up.railway.app";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -21,10 +21,10 @@ export const authOptions: NextAuthOptions = {
         params: {
           access_type: "offline",
           hd: googleAllowedDomain,
-          include_granted_scopes: "true",
           prompt: "consent",
           response_type: "code",
-          scope: GOOGLE_WORKSPACE_SCOPES.join(" "),
+          // Login only — no Gmail/Calendar scopes
+          scope: "openid email profile",
         },
       },
     }),
@@ -74,7 +74,6 @@ export const authOptions: NextAuthOptions = {
       const hasAllowedDomain = email?.endsWith(`@${googleAllowedDomain}`) ?? false;
       const hasAllowedHostedDomain = hostedDomain === googleAllowedDomain;
 
-      // Allow explicit demo users or verified Workspace users in the allowed domain.
       if (
         !email ||
         !emailVerified ||
@@ -82,6 +81,23 @@ export const authOptions: NextAuthOptions = {
       ) {
         return "/login?error=AccessDenied";
       }
+
+      // Sync user to database (fire-and-forget — don't block login)
+      try {
+        await fetch(`${API_BASE}/api/users/sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            name: user.name || null,
+            avatar_url: user.image || null,
+            google_id: account?.providerAccountId || null,
+          }),
+        });
+      } catch {
+        // User sync failure should not block login
+      }
+
       return true;
     },
     async session({ session, token }) {
@@ -90,54 +106,12 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async jwt({ token, user, account, profile }) {
-      const googleToken = token as GoogleAuthToken;
-      const googleProfile = profile as
-        | { hd?: string; email_verified?: boolean | string }
-        | undefined;
-
+    async jwt({ token, user }) {
       if (user) {
         token.sub = user.id;
       }
-
-      if (account?.provider === "google") {
-        googleToken.googleAccessToken = account.access_token;
-        googleToken.googleRefreshToken =
-          account.refresh_token || googleToken.googleRefreshToken;
-        googleToken.googleExpiresAt = account.expires_at
-          ? account.expires_at * 1000
-          : googleToken.googleExpiresAt;
-        googleToken.googleScope = account.scope || googleToken.googleScope;
-        googleToken.googleHostedDomain =
-          typeof googleProfile?.hd === "string"
-            ? googleProfile.hd
-            : googleToken.googleHostedDomain;
-        googleToken.googleEmailVerified =
-          typeof googleProfile?.email_verified === "boolean"
-            ? googleProfile.email_verified
-            : googleProfile?.email_verified === "true";
-        googleToken.googleError = undefined;
-      }
-
-      const scopeSet = new Set(
-        (googleToken.googleScope || "")
-          .split(" ")
-          .map((scope) => scope.trim())
-          .filter(Boolean)
-      );
-
-      const needsWorkspaceRefresh =
-        scopeSet.has(GOOGLE_GMAIL_SCOPE) &&
-        scopeSet.has(GOOGLE_CALENDAR_SCOPE) &&
-        typeof googleToken.googleExpiresAt === "number" &&
-        Date.now() >= googleToken.googleExpiresAt - 60_000 &&
-        Boolean(googleToken.googleRefreshToken);
-
-      if (needsWorkspaceRefresh) {
-        return refreshGoogleAccessToken(googleToken);
-      }
-
-      return googleToken;
+      // No longer storing Google workspace tokens in JWT
+      return token;
     },
   },
   session: {

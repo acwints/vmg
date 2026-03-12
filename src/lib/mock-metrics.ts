@@ -111,6 +111,118 @@ export function tripleWhaleMetrics(name: string) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════
+// TIME-SERIES DATA FOR CHARTS
+// Each generator returns 12 months of data, deterministically
+// seeded from the company name. When real APIs are connected,
+// replace the body of each function with an API call — the
+// return type stays the same, so charts don't change.
+// ═══════════════════════════════════════════════════════════════
+
+export interface MonthlyDataPoint {
+  month: string;
+  [key: string]: string | number;
+}
+
+const MONTH_LABELS = [
+  "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+  "Oct", "Nov", "Dec", "Jan", "Feb", "Mar",
+];
+
+/** Generate a 12-point growth curve with some noise */
+function growthSeries(
+  name: string,
+  salt: number,
+  baseMin: number,
+  baseMax: number,
+  growthPct: number, // total growth over 12 months
+): number[] {
+  const base = range(name, salt, baseMin, baseMax);
+  const points: number[] = [];
+  for (let i = 0; i < 12; i++) {
+    const trend = base * (1 + (growthPct / 100) * (i / 11));
+    // deterministic noise ±5%
+    const noise = 1 + ((seeded(name, salt * 100 + i) % 100) - 50) / 1000;
+    points.push(Math.round(trend * noise));
+  }
+  return points;
+}
+
+/** Shopify time-series: revenue, orders, AOV */
+export function shopifyTimeSeries(name: string): MonthlyDataPoint[] {
+  const revSeries = growthSeries(name, 101, 600, 3500, range(name, 102, 15, 45));
+  const orderSeries = growthSeries(name, 103, 1500, 12000, range(name, 104, 10, 35));
+  return MONTH_LABELS.map((month, i) => ({
+    month,
+    revenue: revSeries[i] * 1000,
+    orders: orderSeries[i],
+    aov: Math.round((revSeries[i] * 1000) / orderSeries[i]),
+  }));
+}
+
+/** Amazon time-series: units, ad spend, BSR */
+export function amazonTimeSeries(name: string): MonthlyDataPoint[] {
+  const unitSeries = growthSeries(name, 110, 1200, 25000, range(name, 111, 8, 30));
+  const adSeries = growthSeries(name, 112, 12, 100, range(name, 113, 10, 40));
+  const bsrBase = range(name, 114, 500, 8000);
+  return MONTH_LABELS.map((month, i) => ({
+    month,
+    units: unitSeries[i],
+    adSpend: adSeries[i] * 1000,
+    bsr: Math.max(50, Math.round(bsrBase * (1 - 0.03 * i) + (seeded(name, 115 + i) % 200 - 100))),
+  }));
+}
+
+/** NetSuite time-series: revenue, COGS, gross margin */
+export function netsuiteTimeSeries(name: string): MonthlyDataPoint[] {
+  const revSeries = growthSeries(name, 120, 500, 7000, range(name, 121, 12, 38));
+  const marginBase = range(name, 122, 42, 68);
+  return MONTH_LABELS.map((month, i) => {
+    const rev = revSeries[i] * 1000;
+    const margin = marginBase + (seeded(name, 123 + i) % 6 - 3);
+    const cogs = Math.round(rev * (1 - margin / 100));
+    return { month, revenue: rev, cogs, grossMargin: margin };
+  });
+}
+
+/** Triple Whale time-series: ROAS, ad spend, CAC */
+export function tripleWhaleTimeSeries(name: string): MonthlyDataPoint[] {
+  const spendSeries = growthSeries(name, 160, 40, 380, range(name, 161, 15, 50));
+  const roasBase = range(name, 162, 25, 55); // stored as 10x to avoid decimals
+  return MONTH_LABELS.map((month, i) => ({
+    month,
+    adSpend: spendSeries[i] * 1000,
+    roas: +(roasBase / 10 + (seeded(name, 163 + i) % 10 - 5) / 10).toFixed(1),
+    cac: range(name, 164, 18, 75) + (seeded(name, 165 + i) % 12 - 6),
+  }));
+}
+
+/** Stripe time-series: MRR, customers, churn */
+export function stripeTimeSeries(name: string): MonthlyDataPoint[] {
+  const mrrSeries = growthSeries(name, 130, 150, 2800, range(name, 131, 20, 55));
+  const custSeries = growthSeries(name, 132, 60, 3500, range(name, 133, 15, 40));
+  const churnBase = range(name, 134, 15, 48); // stored as 10x
+  return MONTH_LABELS.map((month, i) => ({
+    month,
+    mrr: mrrSeries[i] * 1000,
+    customers: custSeries[i],
+    churn: +(churnBase / 10 - (i * 0.1) + (seeded(name, 135 + i) % 6 - 3) / 10).toFixed(1),
+  }));
+}
+
+/** HubSpot time-series: pipeline value, deals, win rate */
+export function hubspotTimeSeries(name: string): MonthlyDataPoint[] {
+  const dealSeries = growthSeries(name, 170, 8, 60, range(name, 171, 15, 45));
+  const valSeries = growthSeries(name, 172, 300, 6500, range(name, 173, 20, 50));
+  const winBase = range(name, 174, 20, 38);
+  return MONTH_LABELS.map((month, i) => ({
+    month,
+    deals: dealSeries[i],
+    pipelineValue: valSeries[i] * 1000,
+    winRate: +(winBase + i * 0.5 + (seeded(name, 175 + i) % 4 - 2)).toFixed(1),
+  }));
+}
+
 // --- Social ---
 export function socialMetrics(name: string, includeTikTok: boolean) {
   const socials: {

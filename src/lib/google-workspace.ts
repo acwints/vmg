@@ -1,17 +1,7 @@
-import type { JWT } from "next-auth/jwt";
-
 export const GOOGLE_GMAIL_SCOPE =
   "https://www.googleapis.com/auth/gmail.readonly";
 export const GOOGLE_CALENDAR_SCOPE =
   "https://www.googleapis.com/auth/calendar.readonly";
-
-export const GOOGLE_WORKSPACE_SCOPES = [
-  "openid",
-  "email",
-  "profile",
-  GOOGLE_GMAIL_SCOPE,
-  GOOGLE_CALENDAR_SCOPE,
-];
 
 export const googleAllowedDomain =
   process.env.GOOGLE_ALLOWED_DOMAIN?.toLowerCase() || "vmgpartners.com";
@@ -23,14 +13,24 @@ export const googleAllowedEmails = new Set(
     .filter(Boolean)
 );
 
-export interface GoogleAuthToken extends JWT {
-  googleAccessToken?: string;
-  googleRefreshToken?: string;
-  googleExpiresAt?: number;
-  googleScope?: string;
-  googleHostedDomain?: string;
-  googleEmailVerified?: boolean;
-  googleError?: string;
+// ── Types ──
+
+export interface DbUser {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  google_id: string | null;
+  google_scopes: string | null;
+  has_gmail: boolean;
+  has_calendar: boolean;
+}
+
+export interface DbUserTokens {
+  google_access_token: string | null;
+  google_refresh_token: string | null;
+  google_token_expiry: string | null;
+  google_scopes: string | null;
 }
 
 export interface WorkspaceSummaryMessage {
@@ -74,6 +74,8 @@ export interface WorkspaceSummary {
     error: string | null;
   };
 }
+
+// ── Google API helpers ──
 
 interface GoogleTokenRefreshResponse {
   access_token?: string;
@@ -124,13 +126,13 @@ interface CalendarEventsResponse {
   }>;
 }
 
-function buildEmptyWorkspaceSummary(token?: GoogleAuthToken): WorkspaceSummary {
+function buildEmptyWorkspaceSummary(): WorkspaceSummary {
   return {
     generatedAt: new Date().toISOString(),
-    connected: Boolean(token?.googleAccessToken),
-    hostedDomain: token?.googleHostedDomain || null,
-    scopes: normalizeScopes(token?.googleScope),
-    authError: token?.googleError || null,
+    connected: false,
+    hostedDomain: null,
+    scopes: [],
+    authError: null,
     gmail: {
       connected: false,
       address: null,
@@ -149,13 +151,6 @@ function buildEmptyWorkspaceSummary(token?: GoogleAuthToken): WorkspaceSummary {
       error: null,
     },
   };
-}
-
-function normalizeScopes(scope?: string): string[] {
-  return (scope || "")
-    .split(" ")
-    .map((value) => value.trim())
-    .filter(Boolean);
 }
 
 function sanitizeText(value?: string | null): string {
@@ -185,18 +180,17 @@ async function googleJson<T>(url: string, accessToken: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+// ── Token refresh (now using DB-stored tokens) ──
+
 export async function refreshGoogleAccessToken(
-  token: GoogleAuthToken
-): Promise<GoogleAuthToken> {
+  refreshToken: string
+): Promise<GoogleTokenRefreshResponse> {
   if (
-    !token.googleRefreshToken ||
+    !refreshToken ||
     !process.env.GOOGLE_CLIENT_ID ||
     !process.env.GOOGLE_CLIENT_SECRET
   ) {
-    return {
-      ...token,
-      googleError: "MissingGoogleRefreshToken",
-    };
+    return { error: "MissingGoogleRefreshToken" };
   }
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -208,45 +202,14 @@ export async function refreshGoogleAccessToken(
       client_id: process.env.GOOGLE_CLIENT_ID,
       client_secret: process.env.GOOGLE_CLIENT_SECRET,
       grant_type: "refresh_token",
-      refresh_token: token.googleRefreshToken,
+      refresh_token: refreshToken,
     }),
   });
 
-  const refreshed = (await response.json()) as GoogleTokenRefreshResponse;
-
-  if (!response.ok || !refreshed.access_token) {
-    return {
-      ...token,
-      googleError: refreshed.error || "RefreshAccessTokenError",
-    };
-  }
-
-  return {
-    ...token,
-    googleAccessToken: refreshed.access_token,
-    googleExpiresAt: Date.now() + (Number(refreshed.expires_in || 3600) * 1000),
-    googleRefreshToken: refreshed.refresh_token || token.googleRefreshToken,
-    googleScope: refreshed.scope || token.googleScope,
-    googleError: undefined,
-  };
+  return response.json() as Promise<GoogleTokenRefreshResponse>;
 }
 
-async function getFreshGoogleToken(
-  token: GoogleAuthToken
-): Promise<GoogleAuthToken> {
-  if (!token.googleAccessToken) {
-    return token;
-  }
-
-  if (
-    typeof token.googleExpiresAt !== "number" ||
-    Date.now() < token.googleExpiresAt - 60_000
-  ) {
-    return token;
-  }
-
-  return refreshGoogleAccessToken(token);
-}
+// ── Data fetchers ──
 
 async function getGmailSummary(accessToken: string) {
   const [profile, inbox, unread, messageList] = await Promise.all([
@@ -445,26 +408,112 @@ async function generateAiBrief(
   }
 }
 
-export async function getWorkspaceSummary(
-  token: GoogleAuthToken | null
+// ── Main entry: fetch workspace summary using DB-stored tokens ──
+
+const API_BASE =
+  process.env.API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://vmg-backend-production.up.railway.app";
+
+export async function getWorkspaceSummaryForUser(
+  email: string
 ): Promise<WorkspaceSummary> {
-  if (!token) {
-    return buildEmptyWorkspaceSummary();
-  }
+  const summary = buildEmptyWorkspaceSummary();
 
-  const refreshedToken = await getFreshGoogleToken(token);
-  const summary = buildEmptyWorkspaceSummary(refreshedToken);
-
-  if (!refreshedToken.googleAccessToken) {
-    summary.authError = summary.authError || "MissingGoogleAccessToken";
+  // Fetch user tokens from database
+  let userRes: Response;
+  try {
+    userRes = await fetch(
+      `${API_BASE}/api/users/me?email=${encodeURIComponent(email)}`,
+      { cache: "no-store" }
+    );
+  } catch {
+    summary.authError = "Failed to reach user service";
     return summary;
   }
 
-  const scopeSet = new Set(summary.scopes);
+  if (!userRes.ok) {
+    // User not found in DB — they just haven't connected anything yet
+    return summary;
+  }
 
-  if (scopeSet.has(GOOGLE_GMAIL_SCOPE)) {
+  const user = await userRes.json();
+  const scopes = ((user.google_scopes as string) || "").split(" ").filter(Boolean);
+  summary.scopes = scopes;
+
+  const hasGmail = scopes.includes(GOOGLE_GMAIL_SCOPE);
+  const hasCalendar = scopes.includes(GOOGLE_CALENDAR_SCOPE);
+
+  if (!hasGmail && !hasCalendar) {
+    // Nothing connected yet
+    return summary;
+  }
+
+  // We need to get the actual tokens — fetch them from backend internal endpoint
+  let tokensRes: Response;
+  try {
+    tokensRes = await fetch(
+      `${API_BASE}/api/users/me/tokens?email=${encodeURIComponent(email)}`,
+      { cache: "no-store" }
+    );
+  } catch {
+    summary.authError = "Failed to fetch tokens";
+    return summary;
+  }
+
+  if (!tokensRes.ok) {
+    summary.authError = "Token lookup failed";
+    return summary;
+  }
+
+  const tokens = await tokensRes.json() as DbUserTokens;
+  let accessToken = tokens.google_access_token;
+
+  if (!accessToken) {
+    summary.authError = "No access token available";
+    return summary;
+  }
+
+  // Check if token is expired and refresh if needed
+  if (tokens.google_token_expiry) {
+    const expiry = new Date(tokens.google_token_expiry).getTime();
+    if (Date.now() >= expiry - 60_000 && tokens.google_refresh_token) {
+      const refreshed = await refreshGoogleAccessToken(tokens.google_refresh_token);
+      if (refreshed.access_token) {
+        accessToken = refreshed.access_token;
+        // Update tokens in DB
+        try {
+          await fetch(
+            `${API_BASE}/api/users/me/tokens?email=${encodeURIComponent(email)}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                google_access_token: refreshed.access_token,
+                google_refresh_token: refreshed.refresh_token || tokens.google_refresh_token,
+                google_token_expiry: new Date(
+                  Date.now() + (Number(refreshed.expires_in || 3600) * 1000)
+                ).toISOString(),
+                google_scopes: refreshed.scope || tokens.google_scopes,
+              }),
+            }
+          );
+        } catch {
+          // Non-fatal — token was refreshed even if DB update failed
+        }
+      } else {
+        summary.authError = refreshed.error || "Token refresh failed";
+        return summary;
+      }
+    }
+  }
+
+  summary.connected = true;
+
+  // Fetch Gmail data
+  if (hasGmail) {
     try {
-      summary.gmail = await getGmailSummary(refreshedToken.googleAccessToken);
+      summary.gmail = await getGmailSummary(accessToken);
       summary.gmail.summary = await generateAiBrief(
         "inbox",
         {
@@ -483,13 +532,12 @@ export async function getWorkspaceSummary(
       summary.gmail.error =
         error instanceof Error ? error.message : "Failed to load Gmail summary";
     }
-  } else {
-    summary.gmail.error = "Reconnect Google to grant Gmail access.";
   }
 
-  if (scopeSet.has(GOOGLE_CALENDAR_SCOPE)) {
+  // Fetch Calendar data
+  if (hasCalendar) {
     try {
-      summary.calendar = await getCalendarSummary(refreshedToken.googleAccessToken);
+      summary.calendar = await getCalendarSummary(accessToken);
       summary.calendar.summary = await generateAiBrief(
         "calendar",
         {
@@ -510,8 +558,6 @@ export async function getWorkspaceSummary(
           ? error.message
           : "Failed to load Calendar summary";
     }
-  } else {
-    summary.calendar.error = "Reconnect Google to grant Calendar access.";
   }
 
   return summary;

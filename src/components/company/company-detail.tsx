@@ -9,6 +9,7 @@ import { LeaderCard } from "@/components/shared/leader-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FundingTimeline } from "@/components/company/funding-timeline";
 import { CompanyIntegrations } from "@/components/company/company-integrations";
+import { CompanyCharts } from "@/components/company/company-charts";
 import { CompanySocials } from "@/components/company/company-socials";
 import { SECTOR_BADGE_VARIANT, SECTOR_LABELS_LONG } from "@/lib/constants";
 import type { PortfolioCompany } from "@/types";
@@ -152,6 +153,9 @@ export function CompanyDetail({ company, backHref, backLabel }: CompanyDetailPro
 
       {/* ── Integrations ── */}
       <CompanyIntegrations companyName={company.name} isConsumer={isConsumer} />
+
+      {/* ── Performance Charts ── */}
+      <CompanyCharts companyName={company.name} isConsumer={isConsumer} />
 
       {/* ── Funding History ── */}
       <FundingTimeline companyId={company.id} />

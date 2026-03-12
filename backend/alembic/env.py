@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import Base
-from app.models import Company, Leader, Memo, MemoCompany, ActivityLog, Fund, Investment, FundSnapshot, FundingRound
+from app.models import User, Company, Leader, Memo, MemoCompany, ActivityLog, Fund, Investment, FundSnapshot, FundingRound, PipelineDeal
 from app.config import settings
 
 config = context.config

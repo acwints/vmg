@@ -7,6 +7,25 @@ from app.database import Base
 import enum
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    name = Column(String(255))
+    avatar_url = Column(String(500))
+    google_id = Column(String(255), unique=True, index=True)
+
+    # Google OAuth tokens (for Gmail/Calendar — NOT login)
+    google_access_token = Column(Text)
+    google_refresh_token = Column(Text)
+    google_token_expiry = Column(DateTime)
+    google_scopes = Column(Text)  # space-separated granted scopes
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Portfolio(str, enum.Enum):
     technology = "technology"
     consumer = "consumer"
