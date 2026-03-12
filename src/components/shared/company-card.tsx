@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ExternalLink, Calendar } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import type { PortfolioCompany } from "@/types";
 
 interface CompanyCardProps {
@@ -44,76 +44,70 @@ export function CompanyCard({ company, className }: CompanyCardProps) {
       ? "/dashboard/portfolio/technology"
       : "/dashboard/portfolio/consumer";
 
-  const primaryLeader = company.leaders[0];
+  const isRealized = company.status !== "active";
 
   return (
     <Link href={`${basePath}/${company.slug}`}>
       <Card
         className={cn(
           "glass-card glass-card-hover cursor-pointer group transition-all duration-300",
-          "hover:translate-y-[-2px]",
+          "hover:translate-y-[-2px] h-full",
           className
         )}
       >
-        <CardContent className="p-5">
-          <div className="flex items-start gap-3.5">
-            {/* Logo */}
-            <div className="h-10 w-10 shrink-0 rounded-lg border border-border/50 bg-muted/30 flex items-center justify-center overflow-hidden">
+        <CardContent className="flex h-full flex-col p-5">
+          {/* Header row: logo + name */}
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 shrink-0 rounded-lg border border-border/50 bg-muted/30 flex items-center justify-center overflow-hidden">
               {company.logoUrl ? (
                 <Image
                   src={company.logoUrl}
                   alt={`${company.name} logo`}
-                  width={32}
-                  height={32}
-                  className="h-8 w-8 object-contain"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 object-contain"
                   unoptimized
                 />
               ) : (
-                <span className="text-xs font-semibold text-muted-foreground">
+                <span className="text-[10px] font-semibold text-muted-foreground">
                   {initials}
                 </span>
               )}
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
                 <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary/70 transition-colors">
                   {company.name}
                 </h3>
                 <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </div>
-
-              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                {company.description}
-              </p>
-
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant={sectorBadgeVariant[company.sector] || "secondary"}>
-                  {sectorLabels[company.sector] || company.sector}
-                </Badge>
-                <Badge variant={company.status === "active" ? "active" : "realized"}>
-                  {company.status === "active" ? "Active" : "Realized"}
-                </Badge>
-              </div>
-
-              {/* Real metadata only */}
-              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border/30 text-xs text-muted-foreground">
-                {primaryLeader && (
-                  <span className="truncate">{primaryLeader.name}, {primaryLeader.title}</span>
-                )}
-                {!primaryLeader && company.foundedYear && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    Founded {company.foundedYear}
-                  </span>
-                )}
-                {company.acquirer && (
-                  <span className="ml-auto shrink-0 text-amber-600 dark:text-amber-400 font-medium">
-                    Acquired by {company.acquirer}
-                  </span>
-                )}
-              </div>
+              {company.foundedYear && (
+                <p className="text-[11px] text-muted-foreground/70">
+                  Est. {company.foundedYear}
+                </p>
+              )}
             </div>
+          </div>
+
+          {/* Description */}
+          <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground line-clamp-2">
+            {company.description}
+          </p>
+
+          {/* Badges */}
+          <div className="mt-auto flex items-center gap-1.5 pt-3">
+            <Badge variant={sectorBadgeVariant[company.sector] || "secondary"} className="whitespace-nowrap text-[10px]">
+              {sectorLabels[company.sector] || company.sector}
+            </Badge>
+            <Badge variant={isRealized ? "realized" : "active"} className="text-[10px]">
+              {isRealized ? "Realized" : "Active"}
+            </Badge>
+            {isRealized && company.acquirer && (
+              <span className="ml-auto truncate text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                {company.acquirer}
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
