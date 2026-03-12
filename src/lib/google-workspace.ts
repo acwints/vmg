@@ -2,6 +2,8 @@ export const GOOGLE_GMAIL_SCOPE =
   "https://www.googleapis.com/auth/gmail.readonly";
 export const GOOGLE_CALENDAR_SCOPE =
   "https://www.googleapis.com/auth/calendar.readonly";
+export const GOOGLE_SHEETS_SCOPE =
+  "https://www.googleapis.com/auth/spreadsheets";
 
 export const googleAllowedDomain =
   process.env.GOOGLE_ALLOWED_DOMAIN?.toLowerCase() || "vmgpartners.com";

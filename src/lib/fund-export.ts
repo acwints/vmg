@@ -214,84 +214,134 @@ export function exportFundOverviewToExcel(overview: FundOverview) {
   downloadBlob(blob, "vmg-fund-overview.xlsx");
 }
 
-// ── Google Sheets (CSV-based open) ──
+// ── Google Sheets API ──
 
-function buildCsvString(rows: Record<string, unknown>[]): string {
-  if (!rows.length) return "";
-  const keys = Object.keys(rows[0]);
-  const escape = (v: unknown) => {
-    const s = String(v ?? "");
-    return s.includes(",") || s.includes('"') || s.includes("\n")
-      ? `"${s.replace(/"/g, '""')}"`
-      : s;
-  };
-  const header = keys.map(escape).join(",");
-  const body = rows.map((r) => keys.map((k) => escape(r[k])).join(",")).join("\n");
-  return `${header}\n${body}`;
+interface SheetPayload {
+  title: string;
+  headers: string[];
+  rows: (string | number | boolean | null)[][];
 }
 
-function openInGoogleSheets(csv: string, title: string) {
-  // Upload CSV content as a data URI and open Google Sheets import
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-
-  // Create a temporary download then redirect to Sheets
-  // Google Sheets doesn't support data URIs directly, so we use the
-  // "new spreadsheet" URL and the user can paste/import
-  // Better approach: create via iframe download + redirect
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${title}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
-  // Open Google Sheets to a new blank sheet — user imports the CSV
-  window.open(
-    "https://sheets.google.com/create",
-    "_blank",
-    "noopener,noreferrer"
+function rowsToSheetData(
+  rows: Record<string, unknown>[]
+): { headers: string[]; values: (string | number | null)[][] } {
+  if (!rows.length) return { headers: [], values: [] };
+  const headers = Object.keys(rows[0]);
+  const values = rows.map((r) =>
+    headers.map((k) => {
+      const v = r[k];
+      if (v === "" || v === undefined || v === null) return null;
+      if (typeof v === "number") return v;
+      return String(v);
+    })
   );
+  return { headers, values };
 }
 
-export function exportFundDetailToSheets(
+export interface SheetsExportResult {
+  url?: string;
+  needsScope?: boolean;
+  error?: string;
+}
+
+async function createGoogleSheet(
+  title: string,
+  sheets: SheetPayload[]
+): Promise<SheetsExportResult> {
+  const res = await fetch("/api/google/sheets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, sheets }),
+  });
+
+  const data = await res.json();
+
+  if (res.status === 403 && data.error === "needs_scope") {
+    return { needsScope: true };
+  }
+
+  if (!res.ok) {
+    return { error: data.error || "Failed to create spreadsheet" };
+  }
+
+  return { url: data.spreadsheetUrl };
+}
+
+export async function exportFundDetailToSheets(
   fund: FundDetail,
   deployment: DeploymentModel | null
-) {
-  // Combine all data into one CSV with section headers
-  const summaryRows = buildFundSummaryRows(fund);
-  const holdingsRows = buildHoldingsRows(fund.investments);
-  const deployRows = deployment ? buildDeploymentRows(deployment) : [];
+): Promise<SheetsExportResult> {
+  const sheets: SheetPayload[] = [];
 
-  // For Sheets, we export the holdings as the primary sheet (most useful for modeling)
-  const rows = holdingsRows.length ? holdingsRows : summaryRows;
-  const csv = buildCsvString(rows);
-  const safeName = fund.slug || fund.name.replace(/\s+/g, "-").toLowerCase();
-  openInGoogleSheets(csv, `${safeName}-holdings`);
+  // Sheet 1: Fund Summary
+  const summaryData = rowsToSheetData(buildFundSummaryRows(fund));
+  sheets.push({
+    title: "Fund Summary",
+    headers: summaryData.headers,
+    rows: summaryData.values,
+  });
 
-  // Also download supplementary files if there's deployment data
-  if (deployRows.length) {
-    const deployCsv = buildCsvString(deployRows);
-    const blob = new Blob([deployCsv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${safeName}-deployment.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  // Sheet 2: Holdings
+  const holdingsData = rowsToSheetData(buildHoldingsRows(fund.investments));
+  if (holdingsData.headers.length) {
+    sheets.push({
+      title: "Holdings",
+      headers: holdingsData.headers,
+      rows: holdingsData.values,
+    });
   }
+
+  // Sheet 3: Deployment Model
+  if (deployment) {
+    const deployData = rowsToSheetData(buildDeploymentRows(deployment));
+    sheets.push({
+      title: "Deployment Model",
+      headers: deployData.headers,
+      rows: deployData.values,
+    });
+  }
+
+  const safeName = fund.name || fund.slug;
+  const result = await createGoogleSheet(`${safeName} — Fund Model`, sheets);
+
+  if (result.url) {
+    window.open(result.url, "_blank", "noopener,noreferrer");
+  }
+
+  return result;
 }
 
-export function exportFundOverviewToSheets(overview: FundOverview) {
-  const fundsData = overview.funds.map((f) => ({
+export async function exportFundOverviewToSheets(
+  overview: FundOverview
+): Promise<SheetsExportResult> {
+  const sheets: SheetPayload[] = [];
+
+  // Sheet 1: Portfolio Summary
+  const overviewRows = [
+    { Metric: "Total AUM ($)", Value: usd(overview.totalAum) },
+    { Metric: "Total Invested ($)", Value: usd(overview.totalInvested) },
+    { Metric: "Total Dry Powder ($)", Value: usd(overview.totalDryPowder) },
+    { Metric: "Total Realized ($)", Value: usd(overview.totalRealized) },
+    { Metric: "Total Unrealized ($)", Value: usd(overview.totalUnrealized) },
+    { Metric: "Weighted TVPI (x)", Value: Math.round(overview.weightedTvpi * 100) / 100 },
+    { Metric: "Weighted Net IRR (%)", Value: pct(overview.weightedNetIrr) },
+  ];
+  const summaryData = rowsToSheetData(overviewRows);
+  sheets.push({
+    title: "Portfolio Summary",
+    headers: summaryData.headers,
+    rows: summaryData.values,
+  });
+
+  // Sheet 2: All Funds
+  const fundsRows = overview.funds.map((f) => ({
     "Fund Name": f.name,
     "Vintage Year": f.vintageYear,
     Strategy: f.strategy,
     Status: f.status,
     "Committed ($)": usd(f.committedCapital),
+    "Mgmt Fee Rate": f.managementFeeRate,
+    "Carry Rate": f.carryRate,
     "Invested ($)": f.snapshot ? usd(f.snapshot.investedCapital) : "",
     "Dry Powder ($)": f.snapshot ? usd(f.snapshot.dryPowder) : "",
     "TVPI (x)": f.snapshot ? Math.round(f.snapshot.tvpi * 100) / 100 : "",
@@ -299,10 +349,37 @@ export function exportFundOverviewToSheets(overview: FundOverview) {
     "Net IRR (%)": f.snapshot ? pct(f.snapshot.netIrr) : "",
     "Gross IRR (%)": f.snapshot ? pct(f.snapshot.grossIrr) : "",
     "# Investments": f.snapshot?.numInvestments ?? "",
-    "Realized ($)": f.snapshot ? usd(f.snapshot.realizedValue) : "",
-    "Unrealized ($)": f.snapshot ? usd(f.snapshot.unrealizedValue) : "",
+    "# Realized": f.snapshot?.numRealized ?? "",
     "Total Value ($)": f.snapshot ? usd(f.snapshot.totalValue) : "",
   }));
-  const csv = buildCsvString(fundsData);
-  openInGoogleSheets(csv, "vmg-fund-overview");
+  const fundsData = rowsToSheetData(fundsRows);
+  sheets.push({
+    title: "Funds",
+    headers: fundsData.headers,
+    rows: fundsData.values,
+  });
+
+  // Sheet 3: All Holdings
+  const allHoldings = overview.funds.flatMap((f) =>
+    f.investments.map((inv) => ({
+      Fund: f.name,
+      ...buildHoldingsRows([inv])[0],
+    }))
+  );
+  if (allHoldings.length) {
+    const holdingsData = rowsToSheetData(allHoldings);
+    sheets.push({
+      title: "All Holdings",
+      headers: holdingsData.headers,
+      rows: holdingsData.values,
+    });
+  }
+
+  const result = await createGoogleSheet("VMG Fund Overview", sheets);
+
+  if (result.url) {
+    window.open(result.url, "_blank", "noopener,noreferrer");
+  }
+
+  return result;
 }

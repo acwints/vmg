@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDeploymentModel, useFundDetail } from "@/hooks/use-api";
 import { fmtUSDPrecise as fmtUSD, fmtPct, fmtDateShort as fmtDate } from "@/lib/formatters";
+import { signIn } from "next-auth/react";
+import { GOOGLE_SHEETS_SCOPE } from "@/lib/google-workspace";
 import { exportFundDetailToExcel, exportFundDetailToSheets } from "@/lib/fund-export";
 import {
   ArrowLeft,
@@ -73,7 +75,17 @@ export function FundDetailPage({ slug }: { slug: string }) {
                 variant="outline"
                 size="sm"
                 className="gap-2 text-xs"
-                onClick={() => exportFundDetailToSheets(fund, deployment)}
+                onClick={async () => {
+                  const result = await exportFundDetailToSheets(fund, deployment);
+                  if (result.needsScope) {
+                    signIn("google", { callbackUrl: `/dashboard/fund/${slug}` }, {
+                      scope: `openid email profile ${GOOGLE_SHEETS_SCOPE}`,
+                      prompt: "consent",
+                      access_type: "offline",
+                      include_granted_scopes: "true",
+                    });
+                  }
+                }}
               >
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
                   <path d="M19 11V9.2C19 8.0799 19 7.5198 18.782 7.092C18.5903 6.7157 18.2843 6.4097 17.908 6.218C17.4802 6 16.9201 6 15.8 6H8.2C7.0799 6 6.5198 6 6.092 6.218C5.7157 6.4097 5.4097 6.7157 5.218 7.092C5 7.5198 5 8.0799 5 9.2V14.8C5 15.9201 5 16.4802 5.218 16.908C5.4097 17.2843 5.7157 17.5903 6.092 17.782C6.5198 18 7.0799 18 8.2 18H11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

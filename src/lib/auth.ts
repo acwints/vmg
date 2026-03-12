@@ -5,6 +5,7 @@ import { nextAuthSecret } from "@/lib/auth-env";
 import {
   GOOGLE_GMAIL_SCOPE,
   GOOGLE_CALENDAR_SCOPE,
+  GOOGLE_SHEETS_SCOPE,
   googleAllowedDomain,
   googleAllowedEmails,
 } from "@/lib/google-workspace";
@@ -101,11 +102,12 @@ export const authOptions: NextAuthOptions = {
         // User sync failure should not block login
       }
 
-      // If this sign-in granted workspace scopes (Gmail/Calendar), store tokens in DB
+      // If this sign-in granted workspace scopes (Gmail/Calendar/Sheets), store tokens in DB
       const grantedScopes = (account?.scope || "").split(" ").filter(Boolean);
       const hasWorkspaceScope =
         grantedScopes.includes(GOOGLE_GMAIL_SCOPE) ||
-        grantedScopes.includes(GOOGLE_CALENDAR_SCOPE);
+        grantedScopes.includes(GOOGLE_CALENDAR_SCOPE) ||
+        grantedScopes.includes(GOOGLE_SHEETS_SCOPE);
 
       if (hasWorkspaceScope && account?.access_token && email) {
         try {
