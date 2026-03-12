@@ -12,6 +12,7 @@ import {
   shopifyMetrics,
   amazonMetrics,
   netsuiteMetrics,
+  tripleWhaleMetrics,
   stripeMetrics,
   socialMetrics,
 } from "@/lib/mock-metrics";
@@ -115,6 +116,7 @@ export function CompanyDetail({ company, backHref, backLabel }: CompanyDetailPro
   const shopify = isConsumer ? shopifyMetrics(company.name) : null;
   const amazon = isConsumer ? amazonMetrics(company.name) : null;
   const netsuite = isConsumer ? netsuiteMetrics(company.name) : null;
+  const tripleWhale = isConsumer ? tripleWhaleMetrics(company.name) : null;
   const stripe = !isConsumer ? stripeMetrics(company.name) : null;
   const socials = socialMetrics(company.name, isConsumer);
 
@@ -237,7 +239,7 @@ export function CompanyDetail({ company, backHref, backLabel }: CompanyDetailPro
           {/* Consumer: Shopify */}
           {shopify && (
             <IntegrationCard
-              logo="https://cdn.shopify.com/shopifycloud/brochure/assets/brand-assets/shopify-logo-shopping-bag-full-color-66166b2e55d67988b56b4bd28b63c271e2b9713c48f43c9a22cabcbac4886abf.svg"
+              logo="https://www.google.com/s2/favicons?domain=shopify.com&sz=128"
               name="Shopify"
               status="Connected"
             >
@@ -279,6 +281,22 @@ export function CompanyDetail({ company, backHref, backLabel }: CompanyDetailPro
               <MetricRow label="COGS" value={netsuite.cogs} />
               <MetricRow label="Cash on Hand" value={netsuite.cashOnHand} />
               <MetricRow label="AR Days" value={netsuite.arDays} />
+            </IntegrationCard>
+          )}
+
+          {/* Consumer: Triple Whale */}
+          {tripleWhale && (
+            <IntegrationCard
+              logo="https://www.google.com/s2/favicons?domain=triplewhale.com&sz=128"
+              name="Triple Whale"
+              status="Connected"
+            >
+              <MetricRow label="Blended ROAS" value={tripleWhale.blendedRoas} accent />
+              <MetricRow label="Ad Spend (mo)" value={tripleWhale.adSpend} />
+              <MetricRow label="New Customer ROAS" value={tripleWhale.ncRoas} />
+              <MetricRow label="MER" value={tripleWhale.mer} />
+              <MetricRow label="CAC" value={tripleWhale.cac} />
+              <MetricRow label="LTV" value={tripleWhale.ltv} />
             </IntegrationCard>
           )}
 

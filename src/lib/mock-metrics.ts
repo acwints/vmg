@@ -85,6 +85,19 @@ export function stripeMetrics(name: string) {
   };
 }
 
+// --- Triple Whale ---
+export function tripleWhaleMetrics(name: string) {
+  const blendedRoas = decimal(name, 60, 2.5, 6.8);
+  return {
+    blendedRoas: blendedRoas + "x",
+    adSpend: formatUSD(range(name, 61, 50, 450) * 1000),
+    ncRoas: decimal(name, 62, 1.8, 4.5) + "x",
+    mer: decimal(name, 63, 3.0, 8.5) + "x",
+    cac: "$" + range(name, 64, 18, 85),
+    ltv: "$" + range(name, 65, 60, 320),
+  };
+}
+
 // --- Social ---
 export function socialMetrics(name: string, includeTikTok: boolean) {
   const socials: {
