@@ -1,10 +1,11 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { GOOGLE_GMAIL_SCOPE, GOOGLE_CALENDAR_SCOPE } from "@/lib/google-workspace";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Mail, CalendarDays, ShieldCheck, Sparkles, Link2 } from "lucide-react";
+import { Loader2, Mail, CalendarDays, ShieldCheck, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { REFERENCE_DATE } from "@/lib/reference-date";
 import { useWorkspaceSummary } from "@/hooks/use-api";
@@ -166,10 +167,10 @@ export default function DashboardPage() {
                     size="sm"
                     className="h-7 gap-1.5 text-[11px]"
                     onClick={() => {
-                      window.location.href = "/api/google/connect/gmail";
+                      signIn("google", { callbackUrl: "/dashboard" }, { scope: `openid email profile ${GOOGLE_GMAIL_SCOPE}`, prompt: "consent", access_type: "offline", include_granted_scopes: "true" });
                     }}
                   >
-                    <Link2 className="h-3 w-3" />
+                    <Mail className="h-3 w-3" />
                     Connect Gmail
                   </Button>
                 )}
@@ -236,7 +237,7 @@ export default function DashboardPage() {
                       size="sm"
                       className="mt-1 gap-1.5"
                       onClick={() => {
-                        window.location.href = "/api/google/connect/gmail";
+                        signIn("google", { callbackUrl: "/dashboard" }, { scope: `openid email profile ${GOOGLE_GMAIL_SCOPE}`, prompt: "consent", access_type: "offline", include_granted_scopes: "true" });
                       }}
                     >
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24">
@@ -283,10 +284,10 @@ export default function DashboardPage() {
                     size="sm"
                     className="h-7 gap-1.5 text-[11px]"
                     onClick={() => {
-                      window.location.href = "/api/google/connect/calendar";
+                      signIn("google", { callbackUrl: "/dashboard" }, { scope: `openid email profile ${GOOGLE_CALENDAR_SCOPE}`, prompt: "consent", access_type: "offline", include_granted_scopes: "true" });
                     }}
                   >
-                    <Link2 className="h-3 w-3" />
+                    <CalendarDays className="h-3 w-3" />
                     Connect Calendar
                   </Button>
                 )}
@@ -346,7 +347,7 @@ export default function DashboardPage() {
                       size="sm"
                       className="mt-1 gap-1.5"
                       onClick={() => {
-                        window.location.href = "/api/google/connect/calendar";
+                        signIn("google", { callbackUrl: "/dashboard" }, { scope: `openid email profile ${GOOGLE_CALENDAR_SCOPE}`, prompt: "consent", access_type: "offline", include_granted_scopes: "true" });
                       }}
                     >
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24">

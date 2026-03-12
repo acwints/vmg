@@ -3,6 +3,8 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { nextAuthSecret } from "@/lib/auth-env";
 import {
+  GOOGLE_GMAIL_SCOPE,
+  GOOGLE_CALENDAR_SCOPE,
   googleAllowedDomain,
   googleAllowedEmails,
 } from "@/lib/google-workspace";
@@ -23,7 +25,8 @@ export const authOptions: NextAuthOptions = {
           hd: googleAllowedDomain,
           prompt: "consent",
           response_type: "code",
-          // Login only — no Gmail/Calendar scopes
+          include_granted_scopes: "true",
+          // Default login scopes — no Gmail/Calendar
           scope: "openid email profile",
         },
       },
@@ -82,7 +85,7 @@ export const authOptions: NextAuthOptions = {
         return "/login?error=AccessDenied";
       }
 
-      // Sync user to database (fire-and-forget — don't block login)
+      // Sync user to database
       try {
         await fetch(`${API_BASE}/api/users/sync`, {
           method: "POST",
@@ -98,6 +101,52 @@ export const authOptions: NextAuthOptions = {
         // User sync failure should not block login
       }
 
+      // If this sign-in granted workspace scopes (Gmail/Calendar), store tokens in DB
+      const grantedScopes = (account?.scope || "").split(" ").filter(Boolean);
+      const hasWorkspaceScope =
+        grantedScopes.includes(GOOGLE_GMAIL_SCOPE) ||
+        grantedScopes.includes(GOOGLE_CALENDAR_SCOPE);
+
+      if (hasWorkspaceScope && account?.access_token && email) {
+        try {
+          // Fetch existing scopes to merge
+          let existingScopes = "";
+          const userRes = await fetch(
+            `${API_BASE}/api/users/me?email=${encodeURIComponent(email)}`,
+            { cache: "no-store" }
+          );
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            existingScopes = userData.google_scopes || "";
+          }
+
+          const mergedScopes = Array.from(
+            new Set([
+              ...existingScopes.split(" ").filter(Boolean),
+              ...grantedScopes,
+            ])
+          ).join(" ");
+
+          await fetch(
+            `${API_BASE}/api/users/me/tokens?email=${encodeURIComponent(email)}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                google_access_token: account.access_token,
+                google_refresh_token: account.refresh_token || null,
+                google_token_expiry: account.expires_at
+                  ? new Date(account.expires_at * 1000).toISOString()
+                  : null,
+                google_scopes: mergedScopes,
+              }),
+            }
+          );
+        } catch {
+          // Token storage failure should not block login
+        }
+      }
+
       return true;
     },
     async session({ session, token }) {
@@ -110,7 +159,6 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
       }
-      // No longer storing Google workspace tokens in JWT
       return token;
     },
   },
