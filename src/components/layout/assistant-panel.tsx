@@ -20,17 +20,17 @@ import {
   TrendingUp,
   Building2,
   BarChart3,
-  Newspaper,
+  Crosshair,
   Globe,
 } from "lucide-react";
 
 const suggestions = [
-  { label: "Portfolio overview", icon: Building2, description: "Cross-portfolio summary", query: "Give me a portfolio overview" },
-  { label: "Sector breakdown", icon: BarChart3, description: "Distribution analysis", query: "Give me a sector breakdown" },
-  { label: "Realized investments", icon: TrendingUp, description: "Exit history & acquirers", query: "Give me a realized investments summary" },
-  { label: "News & signals", icon: Newspaper, description: "Recent activity", query: "Give me the latest news & signals" },
-  { label: "Macro snapshot", icon: Globe, description: "Economic environment", query: "What's the current macro environment and how does it affect our portfolio?" },
-  { label: "Fund performance", icon: TrendingUp, description: "TVPI & IRR comparison", query: "How are our funds performing? Compare TVPI and IRR across vehicles." },
+  { label: "Where are the gaps?", icon: Crosshair, description: "Sector exposure analysis", query: "Where are the gaps in our portfolio? What categories are we underweight in relative to our thesis, and where should we be looking for new investments?" },
+  { label: "Best exits", icon: TrendingUp, description: "Top returning investments", query: "Rank our top 10 realized exits by MOIC and IRR. What patterns do you see in terms of sector, hold period, and entry timing that we should replicate?" },
+  { label: "Fund comparison", icon: BarChart3, description: "Cross-fund benchmarking", query: "Compare all our funds side by side — TVPI, IRR, deployment pace, and number of investments. Which fund is tracking best relative to vintage year and how does our newer fund deployment look?" },
+  { label: "Macro headwinds", icon: Globe, description: "Portfolio risk assessment", query: "Given the current macro environment, which portfolio companies face the most headwinds? Which are best positioned? Think about rates, consumer confidence, and input costs." },
+  { label: "Consumer vs Tech", icon: Building2, description: "Strategy performance", query: "Compare our Consumer and Technology strategies — which has generated better returns, where are the concentration risks, and how do the active portfolios differ in maturity and category diversity?" },
+  { label: "What would you do?", icon: Sparkles, description: "Investment thesis", query: "If you were a GP at VMG looking at our current portfolio and fund deployment, what would your top 3 priorities be for the next 12 months? Be specific about sectors, fund vehicles, and strategic rationale." },
 ];
 
 export function AssistantPanel() {

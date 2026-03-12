@@ -4,17 +4,33 @@ import { authOptions } from "@/lib/auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://vmg-backend-production.up.railway.app";
 
-const VMG_SYSTEM_PROMPT = `You are VMG Copilot, an AI assistant for VMG Partners' internal portfolio intelligence platform.
+const VMG_SYSTEM_PROMPT = `You are VMG Copilot — the senior investment analyst embedded in VMG Partners' portfolio intelligence platform. You think like a GP, speak like a trusted colleague, and back every insight with data.
 
-VMG Partners is a consumer-focused investment firm with two strategies:
-1. VMG Technology - Meaningful minority positions in B2B software companies serving the consumer ecosystem ($4M-$40M revenue, early stage through Series C)
-2. VMG Consumer - Consumer brands across food & beverage, beauty & personal care, wellness & fitness, and pet
+ABOUT VMG PARTNERS:
+VMG Partners is a leading consumer-focused investment firm founded in 2005, based in San Francisco. AUM ~$3.4B across 8 funds and 116 historical investments (52 exits, 49 active). The firm's name comes from the sailing term "Velocity Made Good" — direction matters more than speed.
 
-Key philosophy: "Velocity Made Good" - direction matters more than speed. Named after the sailing term measuring speed toward a destination, not just raw speed.
+TWO STRATEGIES:
+1. VMG Consumer — Majority/significant minority investments in branded consumer companies across beauty & personal care, food & beverage, health & wellness, and pet. Typical check: $30M-$150M. Focus on brands that "anchor modern life."
+2. VMG Technology (VMG Catalyst) — Meaningful minority positions in B2B software companies serving the consumer ecosystem. Typical check: $15M-$80M. Focus on the infrastructure layer powering consumer brands (MarTech, supply chain, vertical SaaS, commerce platforms).
 
-You have access to live portfolio data, fund performance metrics, macroeconomic indicators, and funding history. The LIVE DATA section below contains the current state of the portfolio — always reference specific numbers, company counts, TVPI, IRR, and other metrics from that data when answering questions. Do not guess or use outdated figures; rely on what the live data provides.
+YOUR CAPABILITIES:
+- Deep portfolio analysis: sector exposure, concentration risk, vintage year analysis, category gaps
+- Fund performance benchmarking: TVPI, DPI, RVPI, IRR attribution, deployment pacing
+- Investment pattern recognition: entry valuations, hold periods, exit multiples, sector rotation
+- Market landscape analysis: identify white space, competitive dynamics, emerging categories
+- Macro impact assessment: how rates, inflation, and consumer confidence affect the portfolio
+- Thesis development: connect portfolio patterns to investment hypotheses
 
-You help the VMG team analyze portfolio performance, compare companies, identify trends, and generate investment insights. Be concise, data-driven, and professional. Use the nautical/sailing metaphors when appropriate.`;
+HOW TO RESPOND:
+- Lead with the insight, not the data dump. What does the data MEAN for VMG?
+- Be specific: cite actual company names, fund metrics, dollar amounts, and MOICs from the live data
+- When asked about gaps or opportunities, reason through what VMG's portfolio reveals about the firm's thesis, then identify logical adjacencies or underweight areas
+- When comparing, use tables with markdown formatting
+- Be direct and opinionated — GPs don't want hedged non-answers. Take a position backed by the data
+- Keep responses focused: 150-300 words for simple questions, up to 500 for complex analysis
+- If the data doesn't support a conclusion, say so clearly rather than speculating
+
+IMPORTANT: The LIVE DATA section below is your single source of truth. Reference it directly. Do not hallucinate companies, metrics, or fund data that isn't in the live data.`;
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -28,93 +44,144 @@ export async function POST(req: NextRequest) {
     // Fetch live context from the backend
     let liveContext = "";
     try {
-      const ctxRes = await fetch(`${API_BASE}/api/assistant/context`);
+      const ctxRes = await fetch(`${API_BASE}/api/assistant/context`, {
+        next: { revalidate: 60 },
+      });
       if (ctxRes.ok) {
         const ctx = await ctxRes.json();
         liveContext = `
 
-LIVE DATA (as of ${ctx.timestamp}):
+--- LIVE DATA (as of ${ctx.timestamp}) ---
 
 ${ctx.portfolio_summary}
 
+${ctx.company_data}
+
 ${ctx.fund_performance}
+
+${ctx.top_holdings}
+
+${ctx.exit_data}
 
 ${ctx.macro_context}
 
-${ctx.funding_data}`;
+${ctx.funding_data}
+
+--- END LIVE DATA ---`;
       }
     } catch {
       // Context fetch failed, proceed without it
     }
 
-    // If no OpenAI key, return a helpful mock response
-    if (!process.env.OPENAI_API_KEY) {
-      const lastMessage = messages[messages.length - 1]?.content || "";
-      const mockResponse = generateMockResponse(lastMessage);
-      return NextResponse.json({ content: mockResponse });
+    const systemMessage = VMG_SYSTEM_PROMPT + liveContext;
+    const recentMessages = messages.slice(-20);
+
+    // Try Claude API first, then OpenAI, then mock
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+
+    if (anthropicKey) {
+      return await callClaude(anthropicKey, systemMessage, recentMessages);
     }
 
-    // Call OpenAI
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: VMG_SYSTEM_PROMPT + liveContext },
-          ...messages.slice(-10),
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
+    if (openaiKey) {
+      return await callOpenAI(openaiKey, systemMessage, recentMessages);
+    }
+
+    // No API key — use intelligent mock
+    const lastMessage = messages[messages.length - 1]?.content || "";
+    return NextResponse.json({
+      content: generateMockResponse(lastMessage, liveContext),
     });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "No response generated.";
-
-    return NextResponse.json({ content });
   } catch (error) {
     console.error("Assistant error:", error);
     return NextResponse.json(
-      { content: "I encountered an error. Please try again." },
+      { content: "I encountered an error processing your request. Please try again." },
       { status: 500 }
     );
   }
 }
 
-function generateMockResponse(query: string): string {
+async function callClaude(
+  apiKey: string,
+  systemPrompt: string,
+  messages: { role: string; content: string }[]
+) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: messages.map((m) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Claude API error:", response.status, errorText);
+    throw new Error(`Claude API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content =
+    data.content?.[0]?.text || "No response generated.";
+
+  return NextResponse.json({ content });
+}
+
+async function callOpenAI(
+  apiKey: string,
+  systemPrompt: string,
+  messages: { role: string; content: string }[]
+) {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      temperature: 0.5,
+      max_tokens: 4096,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || "No response generated.";
+  return NextResponse.json({ content });
+}
+
+function generateMockResponse(query: string, liveContext: string): string {
+  // If we have live context but no LLM key, give a helpful message
+  // pointing users to set up the API key
+  const hasContext = liveContext.length > 100;
+
   const q = query.toLowerCase();
 
-  if (q.includes("portfolio overview") || q.includes("overview")) {
-    return "**VMG Partners Portfolio Overview**\n\nAcross both strategies, VMG manages 55 portfolio companies:\n\n- **Technology**: 23 companies (22 active, 1 realized) across Software and Marketplace sectors\n- **Consumer**: 32 companies (14 active, 18 realized) spanning Beauty, Food & Bev, Wellness, and Pet\n\nNotable realized exits include KIND (acquired by Mars), Drunk Elephant (Shiseido), Sun Bum (SC Johnson), and Quest Nutrition (Simply Good Foods).\n\n*Connect data sources on individual company pages for live financial metrics.*";
+  if (q.includes("overview") || q.includes("portfolio") || q.includes("summary")) {
+    if (hasContext) {
+      return "**VMG Copilot** is running in preview mode — I have access to your live portfolio data but need an AI API key to generate dynamic analysis.\n\nTo unlock full intelligence:\n1. Add `ANTHROPIC_API_KEY` (recommended) or `OPENAI_API_KEY` to your Vercel environment variables\n2. Redeploy\n\nOnce configured, I can provide deep portfolio analysis, sector gap identification, fund benchmarking, and investment thesis development — all grounded in your real data.\n\nFor now, explore the **Portfolio**, **Fund**, and **Industry** pages for pre-built analytics.";
+    }
+    return "**VMG Copilot** needs to be configured with an AI API key.\n\nAdd `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` to your Vercel environment variables to enable intelligent portfolio analysis.\n\nI'll be able to analyze sector gaps, benchmark fund performance, identify investment patterns, and develop thesis-driven insights — all from your live portfolio data.";
   }
 
-  if (q.includes("growth") || q.includes("analysis")) {
-    return "**Portfolio Analysis**\n\nTo surface growth metrics and financial performance data, connect external data sources on each company's detail page. Available integrations include:\n\n- **Crunchbase** — Funding history and market intel\n- **SimilarWeb** — Web traffic and digital analytics\n- **Clearbit** — Company enrichment data\n- **LinkedIn / Glassdoor** — Talent and employer data\n\nOnce connected, I'll be able to provide detailed growth analysis across the portfolio.";
-  }
-
-  if (q.includes("sector") || q.includes("breakdown")) {
-    return "**Sector Breakdown**\n\n**Technology** (2 sectors):\n- Software: 18 companies (MarTech, supply chain, vertical SaaS)\n- Marketplaces: 5 companies (e-commerce, workforce, grocery)\n\n**Consumer** (4 sectors):\n- Beauty & Personal Care: 12 companies (6 active)\n- Food & Beverage: 11 companies (3 active)\n- Wellness & Fitness: 5 companies (2 active)\n- Pet: 4 companies (2 active)\n\nBeauty has the most active investments, while Food & Bev has the most realized exits.";
-  }
-
-  if (q.includes("macro") || q.includes("economic") || q.includes("environment")) {
-    return "**Macro Environment Summary**\n\nKey indicators as of early 2026:\n\n- **Fed Funds Rate**: 3.75% (easing cycle continuing)\n- **10Y Treasury**: 4.12%\n- **CPI YoY**: 2.4% (trending toward target)\n- **Consumer Confidence**: 68.4 (recovering)\n- **GDP Growth**: 2.1% (moderate)\n\n**Portfolio Implications:**\n- Easing rates support higher exit multiples for consumer brands\n- Moderating inflation benefits CPG portfolio companies' margins\n- Consumer confidence recovery is a tailwind for VMG's consumer thesis\n- Tech valuations stabilizing as rate cuts continue\n\nVisit the **Macro** dashboard for detailed charts and time series.";
-  }
-
-  if (q.includes("fund") || q.includes("tvpi") || q.includes("irr") || q.includes("performance")) {
-    return "**Fund Performance Summary** *(simulated data)*\n\n| Fund | Vintage | TVPI | Net IRR | Status |\n|------|---------|------|---------|--------|\n| VMG Partners I | 2007 | 3.96x | 23.1% | Closed |\n| VMG Partners II | 2010 | 4.18x | 22.9% | Closed |\n| VMG Partners III | 2014 | 2.59x | 14.6% | Closed |\n| VMG Partners V | 2021 | 2.75x | 28.5% | Active |\n| VMG Catalyst I | 2019 | 2.52x | 30.7% | Harvesting |\n| VMG Catalyst II | 2022 | 3.11x | 12.1% | Active |\n\n**Weighted TVPI**: 3.09x | **Weighted Net IRR**: 22.0%\n\nAll closed funds are performing in the **top quartile** for consumer PE. VMG Partners V is on a strong trajectory with 72% deployment.\n\nSee the **Fund Model** page for deal-level economics and portfolio construction analysis.";
-  }
-
-  if (q.includes("exit") || q.includes("realized")) {
-    return "**Realized Investments**\n\nNotable exits by acquirer:\n\n- **Drunk Elephant** → Shiseido\n- **KIND** → Mars\n- **Sun Bum** → SC Johnson\n- **Quest Nutrition** → Simply Good Foods\n- **Briogeo** → Wella\n- **Justin's** → Hormel\n- **Pirate's Booty** → B&G Foods\n- **Lily's Sweets** → Hershey\n- **Natural Balance** → J.M. Smucker\n- **Vega** → Danone\n\nVisit each company's detail page for more information on investment and exit timelines.";
-  }
-
-  return "I'm VMG Copilot, ready to help you navigate the portfolio. You can ask me about:\n\n- **Portfolio overview** — Summary across Technology & Consumer\n- **Sector breakdown** — Distribution across categories\n- **Realized investments** — Exit history and acquirers\n\nFor live financial metrics, connect data sources on individual company pages.\n\nWhat would you like to explore?";
+  return `**VMG Copilot** is running in preview mode.\n\nYou asked: *"${query}"*\n\nTo get a thoughtful, data-driven answer to this question, add an \`ANTHROPIC_API_KEY\` or \`OPENAI_API_KEY\` to your Vercel environment variables and redeploy.\n\nOnce configured, I'll analyze your live portfolio data (${hasContext ? "which I can already access" : "companies, funds, exits, and macro indicators"}) to provide specific, actionable insights.`;
 }
