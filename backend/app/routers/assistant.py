@@ -41,6 +41,34 @@ async def get_assistant_context(db: Session = Depends(get_db)):
             f"{', '.join(info['companies'])}"
         )
 
+    # Capital allocation by sector (for market-relative gap analysis)
+    sector_capital: dict[str, dict] = {}
+    investments = db.query(Investment).join(Company, Investment.company_id == Company.id).all()
+    for inv in investments:
+        company = inv.company
+        sector = company.sector.value if company and company.sector else "unknown"
+        if sector not in sector_capital:
+            sector_capital[sector] = {"invested": 0.0, "current_value": 0.0, "count": 0, "realized_count": 0, "realized_moic_sum": 0.0}
+        sector_capital[sector]["invested"] += float(inv.invested_capital or 0)
+        sector_capital[sector]["count"] += 1
+        if inv.is_realized:
+            sector_capital[sector]["realized_count"] += 1
+            if inv.realized_moic:
+                sector_capital[sector]["realized_moic_sum"] += float(inv.realized_moic)
+        else:
+            sector_capital[sector]["current_value"] += float(inv.current_valuation or 0)
+
+    total_invested = sum(s["invested"] for s in sector_capital.values())
+    capital_lines = []
+    for sector, data in sorted(sector_capital.items()):
+        pct = (data["invested"] / total_invested * 100) if total_invested > 0 else 0
+        avg_moic = (data["realized_moic_sum"] / data["realized_count"]) if data["realized_count"] > 0 else None
+        moic_str = f", avg realized MOIC {avg_moic:.2f}x" if avg_moic else ""
+        capital_lines.append(
+            f"  {sector}: ${data['invested']:,.0f} invested ({pct:.1f}% of total), "
+            f"{data['count']} investments ({data['realized_count']} realized{moic_str})"
+        )
+
     # Category breakdown (sub-sectors)
     category_detail: dict[str, list[str]] = {}
     for c in companies:
@@ -58,6 +86,7 @@ async def get_assistant_context(db: Session = Depends(get_db)):
         f"PORTFOLIO OVERVIEW (as of {REFERENCE_DATE_LABEL}):\n"
         f"Total: {total_companies} companies ({active_companies} active, {realized_companies} realized)\n\n"
         f"BY SECTOR AND PORTFOLIO:\n" + "\n".join(sector_lines) + "\n\n"
+        f"CAPITAL ALLOCATION BY SECTOR (for market-relative analysis):\n" + "\n".join(capital_lines) + "\n\n"
         f"BY CATEGORY (sub-sector):\n" + "\n".join(category_lines)
     )
 

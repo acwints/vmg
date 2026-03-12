@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 const suggestions = [
-  { label: "Where are the gaps?", icon: Crosshair, description: "Sector exposure analysis", query: "Where are the gaps in our portfolio? What categories are we underweight in relative to our thesis, and where should we be looking for new investments?" },
+  { label: "Where are the gaps?", icon: Crosshair, description: "Market-relative allocation", query: "Analyze our portfolio allocation relative to market size. For each category (beauty, food & bev, wellness, pet, tech), what % of our deployed capital is allocated vs. how large the addressable market is? Where are we overweight or underweight relative to market opportunity — and factor in our realized returns and operational edge by category before recommending where to lean in." },
   { label: "Best exits", icon: TrendingUp, description: "Top returning investments", query: "Rank our top 10 realized exits by MOIC and IRR. What patterns do you see in terms of sector, hold period, and entry timing that we should replicate?" },
   { label: "Fund comparison", icon: BarChart3, description: "Cross-fund benchmarking", query: "Compare all our funds side by side — TVPI, IRR, deployment pace, and number of investments. Which fund is tracking best relative to vintage year and how does our newer fund deployment look?" },
   { label: "Macro headwinds", icon: Globe, description: "Portfolio risk assessment", query: "Given the current macro environment, which portfolio companies face the most headwinds? Which are best positioned? Think about rates, consumer confidence, and input costs." },
