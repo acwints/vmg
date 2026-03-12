@@ -6,11 +6,13 @@ import { SectionHeader } from "@/components/shared/section-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useStats } from "@/hooks/use-api";
+import { Button } from "@/components/ui/button";
 import {
   Award,
   ArrowRight,
   Building2,
   Cpu,
+  ExternalLink,
   Loader2,
   ShoppingBag,
   Target,
@@ -40,6 +42,12 @@ export default function PortfolioPage() {
       <SectionHeader
         title="Portfolio"
         description="Portfolio-level dashboards for VMG Consumer and VMG Technology"
+        action={
+          <Button variant="outline" size="sm" className="gap-2 text-xs">
+            <ExternalLink className="h-3.5 w-3.5" />
+            Connect to PitchBook
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
