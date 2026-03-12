@@ -4,13 +4,16 @@ import Link from "next/link";
 import { SectionHeader } from "@/components/shared/section-header";
 import { StatsCard } from "@/components/shared/stats-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDeploymentModel, useFundDetail } from "@/hooks/use-api";
 import { fmtUSDPrecise as fmtUSD, fmtPct, fmtDateShort as fmtDate } from "@/lib/formatters";
+import { exportFundDetailToExcel, exportFundDetailToSheets } from "@/lib/fund-export";
 import {
   ArrowLeft,
   CalendarRange,
   DollarSign,
+  FileSpreadsheet,
   Landmark,
   Loader2,
   PieChart,
@@ -55,6 +58,31 @@ export function FundDetailPage({ slug }: { slug: string }) {
         <SectionHeader
           title={fund.name}
           description={`Vintage ${fund.vintageYear} ${fund.strategy} vehicle with live deployment and holdings data.`}
+          action={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-xs"
+                onClick={() => exportFundDetailToExcel(fund, deployment)}
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                Open in Excel
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-xs"
+                onClick={() => exportFundDetailToSheets(fund, deployment)}
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                  <path d="M19 11V9.2C19 8.0799 19 7.5198 18.782 7.092C18.5903 6.7157 18.2843 6.4097 17.908 6.218C17.4802 6 16.9201 6 15.8 6H8.2C7.0799 6 6.5198 6 6.092 6.218C5.7157 6.4097 5.4097 6.7157 5.218 7.092C5 7.5198 5 8.0799 5 9.2V14.8C5 15.9201 5 16.4802 5.218 16.908C5.4097 17.2843 5.7157 17.5903 6.092 17.782C6.5198 18 7.0799 18 8.2 18H11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9 6V18M5 12H19M15 18L17 20L21 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Open in Sheets
+              </Button>
+            </div>
+          }
         />
       </div>
 
