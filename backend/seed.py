@@ -1381,20 +1381,23 @@ PORTFOLIO_MAP = {v.value: v for v in Portfolio}
 STATUS_MAP = {v.value: v for v in CompanyStatus}
 
 
+UPDATABLE_FIELDS = [
+    "name", "portfolio", "sector", "status", "description", "website",
+    "logo_url", "domain", "investment_year", "exit_year", "acquirer",
+    "founded_year", "hq_location", "category",
+]
+
+
 def seed():
     Base.metadata.create_all(bind=engine)
 
     db: Session = SessionLocal()
     created = 0
-    skipped = 0
+    updated = 0
+    unchanged = 0
 
     try:
         for data in COMPANIES:
-            existing = db.query(Company).filter(Company.slug == data["slug"]).first()
-            if existing:
-                skipped += 1
-                continue
-
             leaders_data = data.pop("leaders")
 
             # Convert string enum values to enum instances
@@ -1402,18 +1405,35 @@ def seed():
             data["sector"] = SECTOR_MAP[data["sector"]]
             data["status"] = STATUS_MAP[data["status"]]
 
-            company = Company(**data)
-            db.add(company)
-            db.flush()
+            existing = db.query(Company).filter(Company.slug == data["slug"]).first()
+            if existing:
+                # Update any fields that changed
+                changed = False
+                for field in UPDATABLE_FIELDS:
+                    if field not in data:
+                        continue
+                    new_val = data[field]
+                    old_val = getattr(existing, field)
+                    if new_val != old_val:
+                        setattr(existing, field, new_val)
+                        changed = True
+                if changed:
+                    updated += 1
+                else:
+                    unchanged += 1
+            else:
+                company = Company(**data)
+                db.add(company)
+                db.flush()
 
-            for ld in leaders_data:
-                leader = Leader(company_id=company.id, **ld)
-                db.add(leader)
+                for ld in leaders_data:
+                    leader = Leader(company_id=company.id, **ld)
+                    db.add(leader)
 
-            created += 1
+                created += 1
 
         db.commit()
-        print(f"Seed complete: {created} companies created, {skipped} skipped (already exist).")
+        print(f"Seed complete: {created} created, {updated} updated, {unchanged} unchanged.")
         print(f"Total in database: {db.query(Company).count()} companies, {db.query(Leader).count()} leaders.")
     except Exception as e:
         db.rollback()
