@@ -145,6 +145,42 @@ def seed(regenerate=False):
                 db.add(funding_round)
                 created += 1
 
+            # ~40% of active companies get a recent follow-on round (last 12 months)
+            if company.status.value == "active" and hash_str(name, 400) % 5 < 2:
+                last_round_idx = min(num_rounds, len(ROUND_PROGRESSION) - 1)
+                followon_name, fo_min, fo_max = ROUND_PROGRESSION[last_round_idx]
+                if is_consumer and last_round_idx >= 2:
+                    fo_min = int(fo_min * 1.3)
+                    fo_max = int(fo_max * 1.5)
+                fo_amount = in_range(name, 500, fo_min, fo_max)
+
+                # Date in the last 12 months before reference
+                fo_month = in_range(name, 510, 4, 12)  # Apr 2025 - Dec 2025
+                fo_date = datetime.combine(
+                    clamp_date_to_reference(REFERENCE_DAY.year - 1, fo_month, 15),
+                    datetime.min.time(),
+                )
+
+                fo_lead_idx = hash_str(name, 520) % len(LEAD_INVESTORS)
+                fo_lead = LEAD_INVESTORS[fo_lead_idx]
+                fo_num_co = in_range(name, 530, 1, 3)
+                fo_co_start = hash_str(name, 540) % len(CO_INVESTORS)
+                fo_co = [CO_INVESTORS[(fo_co_start + j) % len(CO_INVESTORS)] for j in range(fo_num_co)]
+
+                fo_val_mult = in_range_float(name, 550, 3.0, 6.0)
+                fo_round = FundingRound(
+                    company_id=company.id,
+                    round_name=followon_name,
+                    amount=round(fo_amount, -3),
+                    date=fo_date,
+                    lead_investor=fo_lead,
+                    investors=", ".join([fo_lead] + fo_co),
+                    pre_money_valuation=round(fo_amount * fo_val_mult, -3),
+                    source="crunchbase",
+                )
+                db.add(fo_round)
+                created += 1
+
         db.commit()
         print(f"Funding rounds seed complete:")
         print(f"  Created: {created}")
