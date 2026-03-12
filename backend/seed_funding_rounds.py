@@ -56,20 +56,26 @@ ROUND_PROGRESSION = [
 ]
 
 
-def seed():
+def seed(regenerate=False):
     db: Session = SessionLocal()
     created = 0
     skipped = 0
 
     try:
+        if regenerate:
+            deleted = db.query(FundingRound).delete()
+            db.flush()
+            print(f"  Regenerate mode: cleared {deleted} existing rounds")
+
         companies = db.query(Company).all()
 
         for company in companies:
             # Skip if already has funding rounds
-            existing = db.query(FundingRound).filter(FundingRound.company_id == company.id).first()
-            if existing:
-                skipped += 1
-                continue
+            if not regenerate:
+                existing = db.query(FundingRound).filter(FundingRound.company_id == company.id).first()
+                if existing:
+                    skipped += 1
+                    continue
 
             name = company.name
             founded = company.founded_year or 2018
@@ -94,8 +100,13 @@ def seed():
 
                 amount = in_range(name, 210 + i * 10, min_amt, max_amt)
 
-                # Round date: spread from founded year
-                round_year = founded + i + in_range(name, 220 + i, 0, 1)
+                # Round date: anchor to investment year so recent investments
+                # produce recent rounds. Earlier rounds work backward from there.
+                anchor_year = inv_year
+                spacing = in_range(name, 220 + i, 1, 2)
+                round_year = anchor_year - (num_rounds - 1 - i) * spacing
+                if round_year < founded:
+                    round_year = founded + i
                 round_month = in_range(name, 230 + i, 1, 12)
                 if round_year > REFERENCE_DAY.year:
                     round_year = REFERENCE_DAY.year
@@ -148,4 +159,8 @@ def seed():
 
 
 if __name__ == "__main__":
-    seed()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--regenerate", action="store_true", help="Clear and regenerate all rounds")
+    args = parser.parse_args()
+    seed(regenerate=args.regenerate)
