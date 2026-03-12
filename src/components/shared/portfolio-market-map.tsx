@@ -292,7 +292,7 @@ export function PortfolioMarketMap({ companies }: { companies: PortfolioCompany[
     }
 
     const result: ThemeGroup[] = [];
-    for (const [theme, cos] of map) {
+    for (const [theme, cos] of Array.from(map)) {
       // Sort: active first, then alphabetical
       cos.sort((a, b) => {
         if (a.status !== b.status) return a.status === "active" ? -1 : 1;
