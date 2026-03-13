@@ -122,6 +122,31 @@ export default function LoginPage() {
                 </Button>
               </>
             )}
+
+            {/* Test user skip login */}
+            <div className="w-full flex items-center gap-3 text-muted-foreground/30">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-[10px] uppercase tracking-wider">
+                Test Access
+              </span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                signIn("credentials", {
+                  email: "test@vmgpartners.com",
+                  callbackUrl: "/dashboard",
+                })
+              }
+              className="w-full text-xs"
+            >
+              Skip Login (Test User)
+            </Button>
+            <p className="text-[10px] text-muted-foreground/50">
+              For demo and testing purposes only
+            </p>
           </div>
         </CardContent>
       </Card>
